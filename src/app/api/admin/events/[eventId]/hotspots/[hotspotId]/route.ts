@@ -1,0 +1,92 @@
+import { NextResponse } from "next/server";
+import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
+import { adminDb } from "@/lib/firebase-admin";
+import { validatePuzzleInput } from "@/lib/puzzle-input";
+import type { Puzzle, PuzzleAnswer } from "@/lib/types";
+
+type Params = { params: Promise<{ eventId: string; hotspotId: string }> };
+
+export async function PATCH(request: Request, { params }: Params) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    if (e instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  const { eventId, hotspotId } = await params;
+  const body = await request.json().catch(() => null);
+  const eventRef = adminDb().collection("events").doc(eventId);
+  const hotspotRef = eventRef.collection("hotspots").doc(hotspotId);
+  const hotspotSnap = await hotspotRef.get();
+  if (!hotspotSnap.exists) {
+    return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
+  }
+
+  const hotspotUpdate: Record<string, unknown> = {};
+  if (typeof body?.roomName === "string" && body.roomName.trim()) {
+    hotspotUpdate.roomName = body.roomName.trim();
+  }
+  if (typeof body?.xPct === "number") hotspotUpdate.xPct = body.xPct;
+  if (typeof body?.yPct === "number") hotspotUpdate.yPct = body.yPct;
+
+  const batch = adminDb().batch();
+  if (Object.keys(hotspotUpdate).length > 0) {
+    batch.update(hotspotRef, hotspotUpdate);
+  }
+
+  if (body?.puzzle) {
+    const puzzleInput = validatePuzzleInput(body.puzzle);
+    if (!puzzleInput) {
+      return NextResponse.json({ error: "Ungültiges Rätsel" }, { status: 400 });
+    }
+    const puzzleId = hotspotSnap.data()?.puzzleId as string;
+    const puzzleUpdate: Partial<Puzzle> = {
+      type: puzzleInput.type,
+      question: puzzleInput.question,
+      options: puzzleInput.options,
+      points: puzzleInput.points,
+    };
+    const answerUpdate: PuzzleAnswer = {
+      correctOptionIndex: puzzleInput.correctOptionIndex,
+      correctText: puzzleInput.correctText,
+    };
+    batch.update(eventRef.collection("puzzles").doc(puzzleId), puzzleUpdate);
+    batch.set(eventRef.collection("puzzleAnswers").doc(puzzleId), answerUpdate);
+  }
+
+  await batch.commit();
+  return NextResponse.json({ ok: true });
+}
+
+export async function DELETE(_request: Request, { params }: Params) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    if (e instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  const { eventId, hotspotId } = await params;
+  const eventRef = adminDb().collection("events").doc(eventId);
+  const hotspotRef = eventRef.collection("hotspots").doc(hotspotId);
+  const hotspotSnap = await hotspotRef.get();
+  if (!hotspotSnap.exists) {
+    return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
+  }
+  const puzzleId = hotspotSnap.data()?.puzzleId as string | null;
+
+  const batch = adminDb().batch();
+  batch.delete(hotspotRef);
+  if (puzzleId) {
+    batch.delete(eventRef.collection("puzzles").doc(puzzleId));
+    batch.delete(eventRef.collection("puzzleAnswers").doc(puzzleId));
+  }
+  await batch.commit();
+
+  return NextResponse.json({ ok: true });
+}

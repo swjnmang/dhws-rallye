@@ -1,0 +1,87 @@
+import { NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase-admin";
+import type { Group, Puzzle, PuzzleAnswer } from "@/lib/types";
+
+function normalizeText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, ""); // strip diacritics (e -> e, etc.)
+}
+
+export async function POST(request: Request) {
+  const body = await request.json().catch(() => null);
+  const eventId = typeof body?.eventId === "string" ? body.eventId : "";
+  const groupId = typeof body?.groupId === "string" ? body.groupId : "";
+  const puzzleId = typeof body?.puzzleId === "string" ? body.puzzleId : "";
+  const answer = body?.answer;
+
+  if (!eventId || !groupId || !puzzleId || answer === undefined) {
+    return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+  }
+
+  const eventRef = adminDb().collection("events").doc(eventId);
+  const groupRef = eventRef.collection("groups").doc(groupId);
+  const puzzleRef = eventRef.collection("puzzles").doc(puzzleId);
+  const answerRef = eventRef.collection("puzzleAnswers").doc(puzzleId);
+
+  const [groupSnap, puzzleSnap, answerSnap] = await Promise.all([
+    groupRef.get(),
+    puzzleRef.get(),
+    answerRef.get(),
+  ]);
+
+  if (!groupSnap.exists || !puzzleSnap.exists || !answerSnap.exists) {
+    return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
+  }
+
+  const group = groupSnap.data() as Group;
+  const puzzle = puzzleSnap.data() as Puzzle;
+  const correctAnswer = answerSnap.data() as PuzzleAnswer;
+
+  if (group.finishedAt) {
+    return NextResponse.json({ correct: true, allSolved: true });
+  }
+  if (group.solved[puzzleId]) {
+    return NextResponse.json({ correct: true, allSolved: false });
+  }
+
+  let isCorrect = false;
+  if (puzzle.type === "mc") {
+    isCorrect = typeof answer === "number" && answer === correctAnswer.correctOptionIndex;
+  } else {
+    isCorrect =
+      typeof answer === "string" &&
+      correctAnswer.correctText !== null &&
+      normalizeText(answer) === normalizeText(correctAnswer.correctText);
+  }
+
+  const previousAttempts = group.progress?.[puzzleId]?.attempts ?? 0;
+  const attempts = previousAttempts + 1;
+  const now = Date.now();
+
+  const update: Record<string, unknown> = {
+    [`progress.${puzzleId}.attempts`]: attempts,
+  };
+
+  let allSolved = false;
+
+  if (isCorrect) {
+    update[`solved.${puzzleId}`] = { solvedAt: now, attempts };
+
+    const puzzlesCountSnap = await eventRef.collection("puzzles").count().get();
+    const totalPuzzles = puzzlesCountSnap.data().count;
+    const solvedCount = Object.keys(group.solved).length + 1;
+
+    if (solvedCount >= totalPuzzles) {
+      allSolved = true;
+      update.finishedAt = now;
+      update.totalSeconds = Math.round((now - group.startedAt) / 1000);
+    }
+  }
+
+  await groupRef.update(update);
+
+  return NextResponse.json({ correct: isCorrect, allSolved });
+}
