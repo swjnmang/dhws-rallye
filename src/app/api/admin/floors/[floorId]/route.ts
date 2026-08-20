@@ -6,6 +6,33 @@ import type { CustomFloor, Puzzle } from "@/lib/types";
 
 type Params = { params: Promise<{ floorId: string }> };
 
+// Persists a new drag-and-drop position for one custom floor. `order` is a
+// plain float, not an index - the client computes it as the midpoint between
+// the floors it now sits between (fixed base floors included, whose order is
+// always 0/1/2), so a custom floor can end up anywhere in the sequence,
+// including before all fixed floors.
+export async function PATCH(request: Request, { params }: Params) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    if (e instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  const { floorId } = await params;
+  const body = await request.json().catch(() => null);
+  const order = typeof body?.order === "number" ? body.order : null;
+  if (order === null) {
+    return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+  }
+
+  await adminDb().collection("floors").doc(floorId).update({ order });
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(_request: Request, { params }: Params) {
   try {
     await requireAdmin();

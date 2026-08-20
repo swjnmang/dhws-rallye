@@ -92,36 +92,51 @@ export default function StationsEditor({
     setSelectedFloorId(FLOORS[0].id);
   }
 
-  async function persistFloorOrder(reordered: CustomFloor[]) {
-    await fetch("/api/admin/floors", {
+  async function persistFloorOrder(floorId: string, order: number) {
+    await fetch(`/api/admin/floors/${floorId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ setId, orderedFloorIds: reordered.map((f) => f.id) }),
+      body: JSON.stringify({ order }),
     });
+  }
+
+  // Computes an order value for a floor being inserted at `insertBeforeIndex`
+  // into `list` (which no longer contains the floor being moved), as the
+  // midpoint between its new neighbors. This lets a custom floor land
+  // anywhere in the full sequence - including before the fixed base floors,
+  // whose order (0/1/2) never changes - without renumbering everything else.
+  function computeInsertOrder(list: (typeof allFloors), insertBeforeIndex: number): number {
+    const prev = list[insertBeforeIndex - 1];
+    const next = list[insertBeforeIndex];
+    if (prev && next) return (prev.order + next.order) / 2;
+    if (next) return next.order - 1;
+    if (prev) return prev.order + 1;
+    return 0;
   }
 
   async function handleDropFloor(targetFloorId: string) {
     if (!draggedFloorId || draggedFloorId === targetFloorId) return;
-    const fromIndex = sortedCustomFloors.findIndex((f) => f.id === draggedFloorId);
-    const toIndex = sortedCustomFloors.findIndex((f) => f.id === targetFloorId);
-    if (fromIndex === -1 || toIndex === -1) return;
+    const remaining = allFloors.filter((f) => f.id !== draggedFloorId);
+    const insertBeforeIndex = remaining.findIndex((f) => f.id === targetFloorId);
+    if (insertBeforeIndex === -1) return;
 
-    const reordered = [...sortedCustomFloors];
-    const [moved] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, moved);
-
+    const newOrder = computeInsertOrder(remaining, insertBeforeIndex);
     setDraggedFloorId(null);
-    await persistFloorOrder(reordered);
+    await persistFloorOrder(draggedFloorId, newOrder);
   }
 
   async function handleMoveFloor(floorId: string, direction: -1 | 1) {
-    const index = sortedCustomFloors.findIndex((f) => f.id === floorId);
-    const swapWith = index + direction;
-    if (index === -1 || swapWith < 0 || swapWith >= sortedCustomFloors.length) return;
+    const index = allFloors.findIndex((f) => f.id === floorId);
+    const swapIndex = index + direction;
+    if (index === -1 || swapIndex < 0 || swapIndex >= allFloors.length) return;
 
-    const reordered = [...sortedCustomFloors];
-    [reordered[index], reordered[swapWith]] = [reordered[swapWith], reordered[index]];
-    await persistFloorOrder(reordered);
+    const remaining = allFloors.filter((f) => f.id !== floorId);
+    const targetFloor = allFloors[swapIndex];
+    const targetIndexInRemaining = remaining.findIndex((f) => f.id === targetFloor.id);
+    const insertBeforeIndex = direction === -1 ? targetIndexInRemaining : targetIndexInRemaining + 1;
+
+    const newOrder = computeInsertOrder(remaining, insertBeforeIndex);
+    await persistFloorOrder(floorId, newOrder);
   }
 
   return (
@@ -136,16 +151,16 @@ export default function StationsEditor({
         </div>
 
         <nav className="flex flex-wrap items-center gap-2">
-          {allFloors.map((floor) => {
-            const customIndex = sortedCustomFloors.findIndex((f) => f.id === floor.id);
-            const isCustom = customIndex !== -1;
+          {allFloors.map((floor, floorIndex) => {
+            const isCustom = sortedCustomFloors.some((f) => f.id === floor.id);
+            const isBeingDragged = draggedFloorId !== null && draggedFloorId !== floor.id;
             return (
               <div key={floor.id} className="flex items-center gap-0.5">
                 {isCustom && (
                   <button
                     type="button"
                     onClick={() => handleMoveFloor(floor.id, -1)}
-                    disabled={customIndex === 0}
+                    disabled={floorIndex === 0}
                     aria-label="Ebene nach links verschieben"
                     className="rounded-full px-1.5 py-2 text-slate-400 hover:text-slate-700 disabled:opacity-20"
                   >
@@ -155,8 +170,8 @@ export default function StationsEditor({
                 <button
                   draggable={isCustom}
                   onDragStart={() => setDraggedFloorId(floor.id)}
-                  onDragOver={(e) => isCustom && e.preventDefault()}
-                  onDrop={() => isCustom && handleDropFloor(floor.id)}
+                  onDragOver={(e) => isBeingDragged && e.preventDefault()}
+                  onDrop={() => isBeingDragged && handleDropFloor(floor.id)}
                   onDragEnd={() => setDraggedFloorId(null)}
                   onClick={() => setSelectedFloorId(floor.id)}
                   title={isCustom ? "Ziehen oder Pfeile nutzen, um die Reihenfolge zu ändern" : undefined}
@@ -175,7 +190,7 @@ export default function StationsEditor({
                   <button
                     type="button"
                     onClick={() => handleMoveFloor(floor.id, 1)}
-                    disabled={customIndex === sortedCustomFloors.length - 1}
+                    disabled={floorIndex === allFloors.length - 1}
                     aria-label="Ebene nach rechts verschieben"
                     className="rounded-full px-1.5 py-2 text-slate-400 hover:text-slate-700 disabled:opacity-20"
                   >
