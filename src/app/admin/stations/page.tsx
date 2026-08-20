@@ -1,20 +1,14 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { useEffect, useState } from "react";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { FLOORS } from "@/lib/floors";
-import AdminHeader from "../../../AdminHeader";
+import AdminHeader from "../AdminHeader";
 import HotspotForm from "./HotspotForm";
-import type { RallyEvent, Hotspot, Puzzle } from "@/lib/types";
+import type { Hotspot, Puzzle } from "@/lib/types";
 
-export default function SetupPage({
-  params,
-}: {
-  params: Promise<{ eventId: string }>;
-}) {
-  const { eventId } = use(params);
-  const [event, setEvent] = useState<RallyEvent | null>(null);
+export default function StationsPage() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [selectedFloorId, setSelectedFloorId] = useState(FLOORS[0].id);
@@ -22,19 +16,13 @@ export default function SetupPage({
   const [editingHotspotId, setEditingHotspotId] = useState<string | null>(null);
 
   useEffect(() => {
-    return onSnapshot(doc(db, "events", eventId), (snap) => {
-      setEvent(snap.exists() ? (snap.data() as RallyEvent) : null);
-    });
-  }, [eventId]);
-
-  useEffect(() => {
-    return onSnapshot(collection(db, "events", eventId, "hotspots"), (snap) => {
+    return onSnapshot(collection(db, "hotspots"), (snap) => {
       setHotspots(snap.docs.map((d) => d.data() as Hotspot));
     });
-  }, [eventId]);
+  }, []);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "events", eventId, "puzzles"), (snap) => {
+    return onSnapshot(collection(db, "puzzles"), (snap) => {
       const map: Record<string, Puzzle> = {};
       snap.docs.forEach((d) => {
         const puzzle = d.data() as Puzzle;
@@ -42,19 +30,12 @@ export default function SetupPage({
       });
       setPuzzles(map);
     });
-  }, [eventId]);
-
-  if (!event) {
-    return (
-      <>
-        <AdminHeader title="Rätsel einrichten" />
-        <main className="p-6 text-slate-500">Lade…</main>
-      </>
-    );
-  }
+  }, []);
 
   const currentFloor = FLOORS.find((f) => f.id === selectedFloorId)!;
-  const floorHotspots = hotspots.filter((h) => h.floorId === currentFloor.id);
+  const floorHotspots = hotspots
+    .filter((h) => h.floorId === currentFloor.id)
+    .sort((a, b) => a.number - b.number);
 
   const editingHotspot = hotspots.find((h) => h.id === editingHotspotId) ?? null;
   const editingPuzzle = editingHotspot?.puzzleId ? puzzles[editingHotspot.puzzleId] : null;
@@ -68,8 +49,14 @@ export default function SetupPage({
 
   return (
     <>
-      <AdminHeader title={`${event.name} – Rätsel einrichten`} />
+      <AdminHeader title="Stationen & Rätsel" />
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
+        <p className="text-sm text-slate-600">
+          Diese Stationen gelten für alle Events (Spiel-Durchläufe) gemeinsam. Klickt auf den
+          Grundriss, um eine neue nummerierte Station anzulegen. Bestehende Marker anklicken, um
+          sie zu bearbeiten.
+        </p>
+
         <nav className="flex gap-2">
           {FLOORS.map((floor) => (
             <button
@@ -87,10 +74,6 @@ export default function SetupPage({
         </nav>
 
         <section className="flex flex-col gap-3">
-          <p className="text-sm text-slate-600">
-            Klickt auf den Grundriss, um einen neuen Raum mit Rätsel anzulegen. Bestehende
-            Marker anklicken, um sie zu bearbeiten.
-          </p>
           <div className="relative w-full">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -110,7 +93,7 @@ export default function SetupPage({
                 className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md"
                 title={hotspot.roomName}
               >
-                {hotspot.roomName.slice(0, 1).toUpperCase()}
+                {hotspot.number}
               </button>
             ))}
           </div>
@@ -118,7 +101,8 @@ export default function SetupPage({
           <ul className="flex flex-col gap-1">
             {floorHotspots.map((hotspot) => (
               <li key={hotspot.id} className="text-sm text-slate-600">
-                • {hotspot.roomName}
+                <span className="font-semibold text-slate-800">#{hotspot.number}</span>{" "}
+                {hotspot.roomName}
                 {hotspot.puzzleId && puzzles[hotspot.puzzleId] && (
                   <span className="text-slate-400"> — {puzzles[hotspot.puzzleId].question}</span>
                 )}
@@ -130,7 +114,6 @@ export default function SetupPage({
 
       {pendingPosition && (
         <HotspotForm
-          eventId={eventId}
           floorId={currentFloor.id}
           xPct={pendingPosition.x}
           yPct={pendingPosition.y}
@@ -143,7 +126,6 @@ export default function SetupPage({
 
       {editingHotspot && (
         <HotspotForm
-          eventId={eventId}
           floorId={editingHotspot.floorId}
           xPct={editingHotspot.xPct}
           yPct={editingHotspot.yPct}

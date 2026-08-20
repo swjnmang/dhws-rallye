@@ -56,29 +56,23 @@ export default function PlayPage() {
   }, [session, router]);
 
   useEffect(() => {
-    if (!session) return;
-    const unsub = onSnapshot(
-      collection(db, "events", session.eventId, "hotspots"),
-      (snap) => setHotspots(snap.docs.map((d) => d.data() as Hotspot))
+    const unsub = onSnapshot(collection(db, "hotspots"), (snap) =>
+      setHotspots(snap.docs.map((d) => d.data() as Hotspot))
     );
     return unsub;
-  }, [session]);
+  }, []);
 
   useEffect(() => {
-    if (!session) return;
-    const unsub = onSnapshot(
-      collection(db, "events", session.eventId, "puzzles"),
-      (snap) => {
-        const map: Record<string, Puzzle> = {};
-        snap.docs.forEach((d) => {
-          const puzzle = d.data() as Puzzle;
-          map[puzzle.id] = puzzle;
-        });
-        setPuzzles(map);
-      }
-    );
+    const unsub = onSnapshot(collection(db, "puzzles"), (snap) => {
+      const map: Record<string, Puzzle> = {};
+      snap.docs.forEach((d) => {
+        const puzzle = d.data() as Puzzle;
+        map[puzzle.id] = puzzle;
+      });
+      setPuzzles(map);
+    });
     return unsub;
-  }, [session]);
+  }, []);
 
   useEffect(() => {
     if (!session) return;
@@ -155,7 +149,9 @@ export default function PlayPage() {
     <main className="flex flex-1 flex-col">
       <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3">
         <div>
-          <p className="text-sm text-slate-500">{session.groupName}</p>
+          <p className="text-sm text-slate-500">
+            {session.groupName} · Klasse {session.className}
+          </p>
           <p className="text-sm font-medium text-slate-700">
             {solvedCount} / {totalPuzzles} Rätsel gelöst
           </p>

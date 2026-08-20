@@ -47,7 +47,10 @@ export default function ResultsPage({
           >
             <div className="flex items-center gap-4">
               <span className="w-10 text-2xl">{MEDALS[index] ?? index + 1}</span>
-              <p className="text-lg font-semibold text-slate-900">{group.name}</p>
+              <p className="text-lg font-semibold text-slate-900">
+                {group.name}{" "}
+                <span className="text-base font-normal text-slate-400">· {group.className}</span>
+              </p>
             </div>
             <p className="font-mono text-2xl font-bold tabular-nums">
               {formatDuration(group.totalSeconds ?? 0)}

@@ -23,8 +23,8 @@ export async function POST(request: Request) {
 
   const eventRef = adminDb().collection("events").doc(eventId);
   const groupRef = eventRef.collection("groups").doc(groupId);
-  const puzzleRef = eventRef.collection("puzzles").doc(puzzleId);
-  const answerRef = eventRef.collection("puzzleAnswers").doc(puzzleId);
+  const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
+  const answerRef = adminDb().collection("puzzleAnswers").doc(puzzleId);
 
   const [groupSnap, puzzleSnap, answerSnap] = await Promise.all([
     groupRef.get(),
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   if (isCorrect) {
     update[`solved.${puzzleId}`] = { solvedAt: now, attempts };
 
-    const puzzlesCountSnap = await eventRef.collection("puzzles").count().get();
+    const puzzlesCountSnap = await adminDb().collection("puzzles").count().get();
     const totalPuzzles = puzzlesCountSnap.data().count;
     const solvedCount = Object.keys(group.solved).length + 1;
 

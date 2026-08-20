@@ -6,24 +6,25 @@ service cloud.firestore {
     // the Firebase Admin SDK, which bypasses these rules entirely. Clients
     // therefore never get direct write access to anything.
 
+    // Global, shared by every event: the building layout and its puzzles.
+    match /hotspots/{hotspotId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /puzzles/{puzzleId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Never readable by clients: this is where correct answers live.
+    match /puzzleAnswers/{puzzleId} {
+      allow read, write: if false;
+    }
+
     match /events/{eventId} {
       allow read: if true;
       allow write: if false;
-
-      match /hotspots/{hotspotId} {
-        allow read: if true;
-        allow write: if false;
-      }
-
-      match /puzzles/{puzzleId} {
-        allow read: if true;
-        allow write: if false;
-      }
-
-      // Never readable by clients: this is where correct answers live.
-      match /puzzleAnswers/{puzzleId} {
-        allow read, write: if false;
-      }
 
       match /groups/{groupId} {
         allow read: if true;

@@ -49,11 +49,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { eventId } = await params;
   const eventRef = adminDb().collection("events").doc(eventId);
 
-  const collections = ["hotspots", "puzzles", "puzzleAnswers", "groups"];
-  for (const sub of collections) {
-    const snap = await eventRef.collection(sub).get();
-    await Promise.all(snap.docs.map((d) => d.ref.delete()));
-  }
+  const groupsSnap = await eventRef.collection("groups").get();
+  await Promise.all(groupsSnap.docs.map((d) => d.ref.delete()));
   await eventRef.delete();
 
   return NextResponse.json({ ok: true });

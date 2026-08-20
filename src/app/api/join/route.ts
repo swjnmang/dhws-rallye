@@ -7,9 +7,13 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const code = typeof body?.code === "string" ? body.code.trim().toUpperCase() : "";
   const groupName = typeof body?.groupName === "string" ? body.groupName.trim() : "";
+  const className = typeof body?.className === "string" ? body.className.trim() : "";
 
-  if (!code || !groupName) {
-    return NextResponse.json({ error: "Code und Gruppenname sind erforderlich" }, { status: 400 });
+  if (!code || !groupName || !className) {
+    return NextResponse.json(
+      { error: "Code, Gruppenname und Klasse sind erforderlich" },
+      { status: 400 }
+    );
   }
 
   const eventsRef = adminDb().collection("events");
@@ -33,6 +37,7 @@ export async function POST(request: Request) {
   const group: Group = {
     id: groupId,
     name: groupName,
+    className,
     joinedAt: now,
     startedAt: now,
     finishedAt: null,

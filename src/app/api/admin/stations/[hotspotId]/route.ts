@@ -4,7 +4,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
 import type { Puzzle, PuzzleAnswer } from "@/lib/types";
 
-type Params = { params: Promise<{ eventId: string; hotspotId: string }> };
+type Params = { params: Promise<{ hotspotId: string }> };
 
 export async function PATCH(request: Request, { params }: Params) {
   try {
@@ -16,10 +16,9 @@ export async function PATCH(request: Request, { params }: Params) {
     throw e;
   }
 
-  const { eventId, hotspotId } = await params;
+  const { hotspotId } = await params;
   const body = await request.json().catch(() => null);
-  const eventRef = adminDb().collection("events").doc(eventId);
-  const hotspotRef = eventRef.collection("hotspots").doc(hotspotId);
+  const hotspotRef = adminDb().collection("hotspots").doc(hotspotId);
   const hotspotSnap = await hotspotRef.get();
   if (!hotspotSnap.exists) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
@@ -53,8 +52,8 @@ export async function PATCH(request: Request, { params }: Params) {
       correctOptionIndex: puzzleInput.correctOptionIndex,
       correctText: puzzleInput.correctText,
     };
-    batch.update(eventRef.collection("puzzles").doc(puzzleId), puzzleUpdate);
-    batch.set(eventRef.collection("puzzleAnswers").doc(puzzleId), answerUpdate);
+    batch.update(adminDb().collection("puzzles").doc(puzzleId), puzzleUpdate);
+    batch.set(adminDb().collection("puzzleAnswers").doc(puzzleId), answerUpdate);
   }
 
   await batch.commit();
@@ -71,9 +70,8 @@ export async function DELETE(_request: Request, { params }: Params) {
     throw e;
   }
 
-  const { eventId, hotspotId } = await params;
-  const eventRef = adminDb().collection("events").doc(eventId);
-  const hotspotRef = eventRef.collection("hotspots").doc(hotspotId);
+  const { hotspotId } = await params;
+  const hotspotRef = adminDb().collection("hotspots").doc(hotspotId);
   const hotspotSnap = await hotspotRef.get();
   if (!hotspotSnap.exists) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
@@ -83,8 +81,8 @@ export async function DELETE(_request: Request, { params }: Params) {
   const batch = adminDb().batch();
   batch.delete(hotspotRef);
   if (puzzleId) {
-    batch.delete(eventRef.collection("puzzles").doc(puzzleId));
-    batch.delete(eventRef.collection("puzzleAnswers").doc(puzzleId));
+    batch.delete(adminDb().collection("puzzles").doc(puzzleId));
+    batch.delete(adminDb().collection("puzzleAnswers").doc(puzzleId));
   }
   await batch.commit();
 

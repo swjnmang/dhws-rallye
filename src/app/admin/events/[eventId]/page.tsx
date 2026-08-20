@@ -107,13 +107,7 @@ export default function EventOverviewPage({
           <p className="break-all text-sm text-slate-500">{joinInfo?.url}</p>
         </section>
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Link
-            href={`/admin/events/${eventId}/setup`}
-            className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
-          >
-            Rätsel einrichten
-          </Link>
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Link
             href={`/admin/events/${eventId}/live`}
             className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"

@@ -5,9 +5,9 @@ import { generateId } from "@/lib/codes";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
 import type { Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 
-type Params = { params: Promise<{ eventId: string }> };
-
-export async function POST(request: Request, { params }: Params) {
+// Hotspots/puzzles are global: the building layout and its puzzles are a
+// fixed structure shared by every event (game session), not per-event data.
+export async function POST(request: Request) {
   try {
     await requireAdmin();
   } catch (e) {
@@ -17,7 +17,6 @@ export async function POST(request: Request, { params }: Params) {
     throw e;
   }
 
-  const { eventId } = await params;
   const body = await request.json().catch(() => null);
 
   const floorId = typeof body?.floorId === "string" ? body.floorId : "";
@@ -30,11 +29,14 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
 
-  const eventRef = adminDb().collection("events").doc(eventId);
+  const hotspotsRef = adminDb().collection("hotspots");
+  const countSnap = await hotspotsRef.count().get();
+  const number = countSnap.data().count + 1;
+
   const hotspotId = generateId();
   const puzzleId = generateId();
 
-  const hotspot: Hotspot = { id: hotspotId, floorId, roomName, xPct, yPct, puzzleId };
+  const hotspot: Hotspot = { id: hotspotId, number, floorId, roomName, xPct, yPct, puzzleId };
   const puzzle: Puzzle = {
     id: puzzleId,
     hotspotId,
@@ -49,9 +51,9 @@ export async function POST(request: Request, { params }: Params) {
   };
 
   const batch = adminDb().batch();
-  batch.set(eventRef.collection("hotspots").doc(hotspotId), hotspot);
-  batch.set(eventRef.collection("puzzles").doc(puzzleId), puzzle);
-  batch.set(eventRef.collection("puzzleAnswers").doc(puzzleId), answer);
+  batch.set(hotspotsRef.doc(hotspotId), hotspot);
+  batch.set(adminDb().collection("puzzles").doc(puzzleId), puzzle);
+  batch.set(adminDb().collection("puzzleAnswers").doc(puzzleId), answer);
   await batch.commit();
 
   return NextResponse.json({ hotspot, puzzle });

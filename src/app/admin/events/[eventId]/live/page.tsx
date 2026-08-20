@@ -26,10 +26,10 @@ export default function LivePage({
   }, [eventId]);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "events", eventId, "puzzles"), (snap) => {
+    return onSnapshot(collection(db, "puzzles"), (snap) => {
       setPuzzleCount(snap.docs.length);
     });
-  }, [eventId]);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -73,7 +73,10 @@ export default function LivePage({
                 <div className="flex items-center gap-4">
                   <span className="w-6 text-lg font-bold text-slate-400">{index + 1}</span>
                   <div>
-                    <p className="font-semibold text-slate-900">{group.name}</p>
+                    <p className="font-semibold text-slate-900">
+                      {group.name}{" "}
+                      <span className="font-normal text-slate-400">· {group.className}</span>
+                    </p>
                     <p className="text-sm text-slate-500">
                       {solvedCount} / {puzzleCount} Rätsel
                       {group.finishedAt && " — fertig"}

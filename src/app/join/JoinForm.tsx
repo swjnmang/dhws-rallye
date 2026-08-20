@@ -8,6 +8,7 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
   const router = useRouter();
   const [code, setCode] = useState(initialCode);
   const [groupName, setGroupName] = useState("");
+  const [className, setClassName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +20,7 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
       const res = await fetch("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code, groupName }),
+        body: JSON.stringify({ code, groupName, className }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -30,6 +31,7 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
         eventId: data.eventId,
         groupId: data.groupId,
         groupName,
+        className,
         eventName: data.eventName,
       });
       router.push("/play");
@@ -68,6 +70,21 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
           required
           maxLength={40}
           placeholder="Z. B. Die Adler"
+          className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1 text-left">
+        <label htmlFor="className" className="text-sm font-medium text-slate-700">
+          Klasse
+        </label>
+        <input
+          id="className"
+          value={className}
+          onChange={(e) => setClassName(e.target.value)}
+          required
+          maxLength={20}
+          placeholder="Z. B. 5a"
           className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
         />
       </div>

@@ -18,8 +18,11 @@ export type RallyEvent = {
   createdAt: number;
 };
 
+// Hotspots/puzzles are global (not per-event): the building layout and its
+// puzzles are a fixed structure shared by every game session ("event").
 export type Hotspot = {
   id: string;
+  number: number;
   floorId: string;
   roomName: string;
   xPct: number;
@@ -52,6 +55,7 @@ export type SolvedEntry = {
 export type Group = {
   id: string;
   name: string;
+  className: string;
   joinedAt: number;
   startedAt: number;
   finishedAt: number | null;

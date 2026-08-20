@@ -9,7 +9,6 @@ type ExistingData = {
 };
 
 export default function HotspotForm({
-  eventId,
   floorId,
   xPct,
   yPct,
@@ -18,7 +17,6 @@ export default function HotspotForm({
   onSaved,
   onDeleted,
 }: {
-  eventId: string;
   floorId: string;
   xPct: number;
   yPct: number;
@@ -64,8 +62,8 @@ export default function HotspotForm({
       : { floorId, roomName, xPct, yPct, puzzle: puzzlePayload };
 
     const url = existing
-      ? `/api/admin/events/${eventId}/hotspots/${existing.hotspot.id}`
-      : `/api/admin/events/${eventId}/hotspots`;
+      ? `/api/admin/stations/${existing.hotspot.id}`
+      : `/api/admin/stations`;
 
     const res = await fetch(url, {
       method: existing ? "PATCH" : "POST",
@@ -85,9 +83,7 @@ export default function HotspotForm({
     if (!existing) return;
     if (!confirm(`Raum "${existing.hotspot.roomName}" wirklich löschen?`)) return;
     setSaving(true);
-    await fetch(`/api/admin/events/${eventId}/hotspots/${existing.hotspot.id}`, {
-      method: "DELETE",
-    });
+    await fetch(`/api/admin/stations/${existing.hotspot.id}`, { method: "DELETE" });
     setSaving(false);
     onDeleted();
   }
@@ -99,7 +95,9 @@ export default function HotspotForm({
         className="flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
       >
         <h2 className="text-lg font-bold">
-          {existing ? "Raum bearbeiten" : "Neuen Raum anlegen"}
+          {existing
+            ? `Raum #${existing.hotspot.number} bearbeiten`
+            : "Neuen Raum anlegen"}
         </h2>
 
         <div className="flex flex-col gap-1">

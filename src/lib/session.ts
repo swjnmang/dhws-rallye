@@ -4,6 +4,7 @@ export type GroupSession = {
   eventId: string;
   groupId: string;
   groupName: string;
+  className: string;
   eventName: string;
 };
 
