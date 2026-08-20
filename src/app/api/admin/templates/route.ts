@@ -17,17 +17,19 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const sourceEventId = typeof body?.sourceEventId === "string" ? body.sourceEventId : "";
+  const sourceEventId = typeof body?.sourceEventId === "string" && body.sourceEventId ? body.sourceEventId : "";
 
-  if (!name || !sourceEventId) {
-    return NextResponse.json({ error: "Name und Quell-Event sind erforderlich" }, { status: 400 });
+  if (!name) {
+    return NextResponse.json({ error: "Name ist erforderlich" }, { status: 400 });
   }
 
   const templateId = generateId();
   const template: Template = { id: templateId, name, createdAt: Date.now() };
 
   await adminDb().collection("templates").doc(templateId).set(template);
-  await cloneStations(sourceEventId, templateId);
+  if (sourceEventId) {
+    await cloneStations(sourceEventId, templateId);
+  }
 
   return NextResponse.json({ template });
 }
