@@ -6,10 +6,12 @@ sieht den Fortschritt live und am Ende eine Rangliste.
 
 - **Frontend/Server:** Next.js (App Router, TypeScript), gehostet auf Vercel
 - **Daten:** Firebase Firestore (kostenloser Spark-Tarif reicht aus)
-- **Grundriss-Bilder:** werden im Browser komprimiert und als Data-URL direkt
-  in Firestore gespeichert (eigenes Dokument pro Ebene) – Firebase Storage
+- **Grundriss-Bilder:** liegen als statische Dateien unter
+  [`public/floors/`](./public/floors) und werden in
+  [`src/lib/floors.ts`](./src/lib/floors.ts) referenziert – Firebase Storage
   wird bewusst **nicht** verwendet, da es inzwischen den kostenpflichtigen
-  Blaze-Tarif voraussetzt.
+  Blaze-Tarif voraussetzt. Um einen Grundriss zu ändern: Bilddatei am selben
+  Pfad ersetzen und neu deployen (kein Upload-Button in der App).
 - **Sicherheit:** Alle Schreibzugriffe und die Rätsel-Auswertung laufen über
   serverseitige Route-Handler mit dem Firebase Admin SDK. Lösungen werden nie
   an den Client geschickt.
@@ -58,9 +60,10 @@ App läuft dann auf http://localhost:3000.
 
 1. Unter `/admin` mit dem Lehrkraft-Passwort anmelden.
 2. Ein neues Event anlegen (z. B. „Klasse 5a").
-3. Unter **Rätsel einrichten**: pro Ebene ein Grundriss-Bild hochladen, dann
-   direkt auf das Bild klicken, um einen Raum mit Rätsel (Multiple-Choice
-   oder Texteingabe) anzulegen.
+3. Unter **Rätsel einrichten**: zwischen den drei Ebenen wechseln und direkt
+   auf den Grundriss klicken, um einen Raum mit Rätsel (Multiple-Choice oder
+   Texteingabe) anzulegen. Die Grundriss-Bilder selbst sind fest hinterlegt
+   (siehe oben) – aktuell noch Platzhalter, bis echte Baupläne vorliegen.
 4. Auf der Event-Übersicht die Rallye **starten** – erst danach können
    Gruppen beitreten.
 5. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder
@@ -93,7 +96,7 @@ src/
     join/                        Gruppen-Beitritt (Code/QR/Link)
     play/                        Spielansicht der Gruppen (Grundriss + Rätsel + Timer)
     admin/                       Lehrkraft-Bereich (passwortgeschützt via src/proxy.ts)
-      events/[eventId]/setup     Grundriss-Upload + Hotspot-/Rätsel-Editor
+      events/[eventId]/setup     Hotspot-/Rätsel-Editor auf dem Grundriss
       events/[eventId]/live      Live-Dashboard
       events/[eventId]/results   Abschluss-Rangliste
     api/
