@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase-client";
 import AdminHeader from "../../../AdminHeader";
 import FloorUploader from "./FloorUploader";
 import HotspotForm from "./HotspotForm";
-import type { RallyEvent, Hotspot, Puzzle } from "@/lib/types";
+import type { RallyEvent, Floor, Hotspot, Puzzle } from "@/lib/types";
 
 const DEFAULT_FLOOR_NAMES = ["Erdgeschoss", "1. Obergeschoss", "2. Obergeschoss"];
 
@@ -17,6 +17,7 @@ export default function SetupPage({
 }) {
   const { eventId } = use(params);
   const [event, setEvent] = useState<RallyEvent | null>(null);
+  const [floors, setFloors] = useState<Floor[]>([]);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [selectedFloorOrder, setSelectedFloorOrder] = useState(0);
@@ -26,6 +27,12 @@ export default function SetupPage({
   useEffect(() => {
     return onSnapshot(doc(db, "events", eventId), (snap) => {
       setEvent(snap.exists() ? (snap.data() as RallyEvent) : null);
+    });
+  }, [eventId]);
+
+  useEffect(() => {
+    return onSnapshot(collection(db, "events", eventId, "floors"), (snap) => {
+      setFloors(snap.docs.map((d) => d.data() as Floor));
     });
   }, [eventId]);
 
@@ -55,7 +62,7 @@ export default function SetupPage({
     );
   }
 
-  const currentFloor = event.floors.find((f) => f.order === selectedFloorOrder);
+  const currentFloor = floors.find((f) => f.order === selectedFloorOrder);
   const floorHotspots = currentFloor
     ? hotspots.filter((h) => h.floorId === currentFloor.id)
     : [];
@@ -86,7 +93,7 @@ export default function SetupPage({
                   : "bg-slate-100 text-slate-700"
               }`}
             >
-              {event.floors.find((f) => f.order === order)?.name ?? defaultName}
+              {floors.find((f) => f.order === order)?.name ?? defaultName}
             </button>
           ))}
         </nav>

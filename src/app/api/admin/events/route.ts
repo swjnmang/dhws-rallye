@@ -36,7 +36,6 @@ export async function POST(request: Request) {
     status: "draft",
     joinCode,
     createdAt: Date.now(),
-    floors: [],
   };
 
   await eventsRef.doc(id).set(event);

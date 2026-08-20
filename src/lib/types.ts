@@ -1,5 +1,8 @@
 export type EventStatus = "draft" | "active" | "finished";
 
+// A floor's image is a compressed data URL, stored as its own Firestore
+// document (subcollection) so each floor stays under the 1 MiB doc limit
+// independently of the others and of the parent event document.
 export type Floor = {
   id: string;
   name: string;
@@ -13,7 +16,6 @@ export type RallyEvent = {
   status: EventStatus;
   joinCode: string;
   createdAt: number;
-  floors: Floor[];
 };
 
 export type Hotspot = {

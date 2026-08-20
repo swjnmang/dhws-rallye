@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
-import { adminDb, adminBucket } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebase-admin";
 import { generateId } from "@/lib/codes";
-import type { Floor, RallyEvent } from "@/lib/types";
+import type { Floor } from "@/lib/types";
 
 type Params = { params: Promise<{ eventId: string }> };
+
+// Firestore documents are capped at 1 MiB; leave headroom for the rest of
+// the document plus base64's ~33% overhead over the raw image bytes.
+const MAX_DATA_URL_LENGTH = 900_000;
 
 export async function POST(request: Request, { params }: Params) {
   try {
@@ -17,45 +21,27 @@ export async function POST(request: Request, { params }: Params) {
   }
 
   const { eventId } = await params;
-  const formData = await request.formData();
+  const body = await request.json().catch(() => null);
 
-  const file = formData.get("file");
-  const name = formData.get("name");
-  const orderRaw = formData.get("order");
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  const order = typeof body?.order === "number" ? body.order : null;
+  const imageDataUrl = typeof body?.imageDataUrl === "string" ? body.imageDataUrl : "";
 
-  if (!(file instanceof File) || typeof name !== "string" || typeof orderRaw !== "string") {
+  if (!name || order === null || !imageDataUrl.startsWith("data:image/")) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
-  const order = Number(orderRaw);
+  if (imageDataUrl.length > MAX_DATA_URL_LENGTH) {
+    return NextResponse.json({ error: "Bild ist zu groß" }, { status: 413 });
+  }
 
   const eventRef = adminDb().collection("events").doc(eventId);
-  const eventSnap = await eventRef.get();
-  if (!eventSnap.exists) {
-    return NextResponse.json({ error: "Event nicht gefunden" }, { status: 404 });
-  }
-  const event = eventSnap.data() as RallyEvent;
+  const floorsRef = eventRef.collection("floors");
 
-  const existingFloor = event.floors.find((f) => f.order === order);
-  const floorId = existingFloor?.id ?? generateId();
+  const existing = await floorsRef.where("order", "==", order).limit(1).get();
+  const floorId = existing.empty ? generateId() : existing.docs[0].id;
 
-  const extension = file.name.split(".").pop() || "png";
-  const storagePath = `events/${eventId}/floors/${floorId}.${extension}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const floor: Floor = { id: floorId, name, imagePath: imageDataUrl, order };
+  await floorsRef.doc(floorId).set(floor);
 
-  const storageFile = adminBucket().file(storagePath);
-  await storageFile.save(buffer, {
-    contentType: file.type || "image/png",
-    public: true,
-  });
-
-  const imagePath = `https://storage.googleapis.com/${adminBucket().name}/${storagePath}`;
-
-  const newFloor: Floor = { id: floorId, name, imagePath, order };
-  const floors = existingFloor
-    ? event.floors.map((f) => (f.id === floorId ? newFloor : f))
-    : [...event.floors, newFloor].sort((a, b) => a.order - b.order);
-
-  await eventRef.update({ floors });
-
-  return NextResponse.json({ floor: newFloor });
+  return NextResponse.json({ floor });
 }

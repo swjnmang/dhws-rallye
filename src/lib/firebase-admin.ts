@@ -1,7 +1,5 @@
 import { cert, getApps, getApp, initializeApp, type App } from "firebase-admin/app";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
-import { getStorage } from "firebase-admin/storage";
-import type { Bucket } from "@google-cloud/storage";
 
 function getAdminApp(): App {
   if (getApps().length) return getApp();
@@ -13,23 +11,14 @@ function getAdminApp(): App {
 
   const serviceAccount = JSON.parse(serviceAccountJson);
 
-  return initializeApp({
-    credential: cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
-  });
+  return initializeApp({ credential: cert(serviceAccount) });
 }
 
 // Lazily initialized so importing this module never fails at build time -
-// only calling adminDb()/adminBucket() at request time requires the env vars.
+// only calling adminDb() at request time requires the env var.
 let dbInstance: Firestore | null = null;
-let bucketInstance: Bucket | null = null;
 
 export function adminDb(): Firestore {
   if (!dbInstance) dbInstance = getFirestore(getAdminApp());
   return dbInstance;
-}
-
-export function adminBucket(): Bucket {
-  if (!bucketInstance) bucketInstance = getStorage(getAdminApp()).bucket();
-  return bucketInstance;
 }

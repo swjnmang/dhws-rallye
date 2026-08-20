@@ -5,7 +5,11 @@ Räumen auf einem Grundriss und werden dabei zeitlich getrackt. Die Lehrkraft
 sieht den Fortschritt live und am Ende eine Rangliste.
 
 - **Frontend/Server:** Next.js (App Router, TypeScript), gehostet auf Vercel
-- **Daten:** Firebase Firestore (+ Firebase Storage für die Grundriss-Bilder)
+- **Daten:** Firebase Firestore (kostenloser Spark-Tarif reicht aus)
+- **Grundriss-Bilder:** werden im Browser komprimiert und als Data-URL direkt
+  in Firestore gespeichert (eigenes Dokument pro Ebene) – Firebase Storage
+  wird bewusst **nicht** verwendet, da es inzwischen den kostenpflichtigen
+  Blaze-Tarif voraussetzt.
 - **Sicherheit:** Alle Schreibzugriffe und die Rätsel-Auswertung laufen über
   serverseitige Route-Handler mit dem Firebase Admin SDK. Lösungen werden nie
   an den Client geschickt.
@@ -17,14 +21,13 @@ sieht den Fortschritt live und am Ende eine Rangliste.
 1. Auf [console.firebase.google.com](https://console.firebase.google.com) ein
    neues Projekt anlegen.
 2. **Firestore Database** aktivieren (production mode).
-3. **Storage** aktivieren.
-4. Unter _Projekteinstellungen → Allgemein → Meine Apps_ eine **Web-App**
+3. Unter _Projekteinstellungen → Allgemein → Meine Apps_ eine **Web-App**
    hinzufügen. Die angezeigte Konfiguration (`apiKey`, `authDomain`, …) wird
    für die `NEXT_PUBLIC_FIREBASE_*`-Variablen gebraucht.
-5. Unter _Projekteinstellungen → Dienstkonten_ auf **„Neuen privaten Schlüssel
+4. Unter _Projekteinstellungen → Dienstkonten_ auf **„Neuen privaten Schlüssel
    generieren"** klicken. Die heruntergeladene JSON-Datei wird für
    `FIREBASE_SERVICE_ACCOUNT_KEY` gebraucht (kompletter Inhalt als eine Zeile).
-6. Die Firestore-Regeln aus [`firestore.rules`](./firestore.rules) in der
+5. Die Firestore-Regeln aus [`firestore.rules`](./firestore.rules) in der
    Firebase Console unter _Firestore Database → Regeln_ einfügen und
    veröffentlichen.
 
@@ -37,8 +40,7 @@ cp .env.local.example .env.local
 ```
 
 - `NEXT_PUBLIC_FIREBASE_*` → aus der Web-App-Konfiguration (Schritt 1.4)
-- `FIREBASE_SERVICE_ACCOUNT_KEY` → Inhalt der Service-Account-JSON (Schritt 1.5)
-- `FIREBASE_STORAGE_BUCKET` → Bucket-Name, z. B. `dein-projekt.firebasestorage.app`
+- `FIREBASE_SERVICE_ACCOUNT_KEY` → Inhalt der Service-Account-JSON (Schritt 1.4)
 - `ADMIN_PASSWORD` → Passwort für den Lehrkraft-Bereich (`/admin`)
 - `ADMIN_SESSION_SECRET` → beliebiger langer Zufallsstring, z. B. mit
   `openssl rand -hex 32`

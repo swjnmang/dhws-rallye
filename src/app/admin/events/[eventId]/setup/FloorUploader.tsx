@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { compressImageToDataUrl } from "@/lib/image-compress";
 import type { Floor } from "@/lib/types";
 
 export default function FloorUploader({
@@ -25,19 +26,23 @@ export default function FloorUploader({
     setUploading(true);
     setError(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("name", name || defaultName);
-    formData.append("order", String(order));
-
-    const res = await fetch(`/api/admin/events/${eventId}/floors`, {
-      method: "POST",
-      body: formData,
-    });
-
-    setUploading(false);
-    if (!res.ok) setError("Upload fehlgeschlagen");
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    try {
+      const imageDataUrl = await compressImageToDataUrl(file);
+      const res = await fetch(`/api/admin/events/${eventId}/floors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name || defaultName, order, imageDataUrl }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Upload fehlgeschlagen");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload fehlgeschlagen");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   }
 
   return (

@@ -7,13 +7,14 @@ import { db } from "@/lib/firebase-client";
 import { getGroupSession, clearGroupSession, type GroupSession } from "@/lib/session";
 import { formatDuration } from "@/lib/format";
 import PuzzleModal from "./PuzzleModal";
-import type { RallyEvent, Hotspot, Puzzle, Group } from "@/lib/types";
+import type { RallyEvent, Floor, Hotspot, Puzzle, Group } from "@/lib/types";
 
 export default function PlayPage() {
   const router = useRouter();
   const [session, setSession] = useState<GroupSession | null | undefined>(undefined);
 
   const [event, setEvent] = useState<RallyEvent | null>(null);
+  const [floors, setFloors] = useState<Floor[]>([]);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [group, setGroup] = useState<Group | null>(null);
@@ -50,10 +51,22 @@ export default function PlayPage() {
       }
       const data = snap.data() as RallyEvent;
       setEvent(data);
-      setSelectedFloorId((current) => current ?? data.floors[0]?.id ?? null);
     });
     return unsub;
   }, [session, router]);
+
+  useEffect(() => {
+    if (!session) return;
+    const unsub = onSnapshot(
+      collection(db, "events", session.eventId, "floors"),
+      (snap) => {
+        const list = snap.docs.map((d) => d.data() as Floor).sort((a, b) => a.order - b.order);
+        setFloors(list);
+        setSelectedFloorId((current) => current ?? list[0]?.id ?? null);
+      }
+    );
+    return unsub;
+  }, [session]);
 
   useEffect(() => {
     if (!session) return;
@@ -149,7 +162,7 @@ export default function PlayPage() {
     );
   }
 
-  const selectedFloor = event.floors.find((f) => f.id === selectedFloorId);
+  const selectedFloor = floors.find((f) => f.id === selectedFloorId);
 
   return (
     <main className="flex flex-1 flex-col">
@@ -165,12 +178,9 @@ export default function PlayPage() {
         </p>
       </header>
 
-      {event.floors.length > 1 && (
+      {floors.length > 1 && (
         <nav className="flex gap-2 overflow-x-auto border-b border-slate-200 bg-white px-4 py-2">
-          {event.floors
-            .slice()
-            .sort((a, b) => a.order - b.order)
-            .map((floor) => (
+          {floors.map((floor) => (
               <button
                 key={floor.id}
                 onClick={() => setSelectedFloorId(floor.id)}
