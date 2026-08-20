@@ -8,6 +8,7 @@ import { getGroupSession, clearGroupSession, type GroupSession } from "@/lib/ses
 import { formatDuration } from "@/lib/format";
 import { FLOORS } from "@/lib/floors";
 import PuzzleModal from "./PuzzleModal";
+import PlayMapView from "./PlayMapView";
 import type { RallyEvent, CustomFloor, Hotspot, Puzzle, Group } from "@/lib/types";
 
 export default function PlayPage() {
@@ -19,6 +20,9 @@ export default function PlayPage() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [group, setGroup] = useState<Group | null>(null);
+  const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
 
   const [selectedFloorId, setSelectedFloorId] = useState<string>(FLOORS[0].id);
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
@@ -124,6 +128,8 @@ export default function PlayPage() {
         groupId: session.groupId,
         puzzleId: activeHotspot.puzzleId,
         answer,
+        lat: currentPosition?.lat,
+        lng: currentPosition?.lng,
       }),
     });
     const data = await res.json();
@@ -199,38 +205,49 @@ export default function PlayPage() {
               }`}
             >
               {floor.name}
+              {floor.kind === "map" && " 📍"}
             </button>
           ))}
         </nav>
       )}
 
-      <div className="relative flex-1 overflow-auto bg-slate-100">
-        <div className="relative mx-auto w-full max-w-3xl">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={selectedFloor.imagePath}
-            alt={selectedFloor.name}
-            className="w-full select-none"
+      <div className="relative flex-1 overflow-hidden bg-slate-100">
+        {selectedFloor.kind === "map" ? (
+          <PlayMapView
+            floor={selectedFloor as CustomFloor}
+            hotspots={floorHotspots}
+            isSolved={(hotspot) => (hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false)}
+            onOpenHotspot={(hotspotId) => setActiveHotspotId(hotspotId)}
+            onPositionUpdate={(lat, lng) => setCurrentPosition({ lat, lng })}
           />
-          {floorHotspots.map((hotspot) => {
-            const solved = hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false;
-            return (
-              <button
-                key={hotspot.id}
-                onClick={() => !solved && setActiveHotspotId(hotspot.id)}
-                style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
-                className={`absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold shadow-md ${
-                  solved
-                    ? "bg-emerald-500 text-white"
-                    : "bg-amber-400 text-white animate-pulse"
-                }`}
-                aria-label={hotspot.roomName}
-              >
-                {solved ? "✓" : "?"}
-              </button>
-            );
-          })}
-        </div>
+        ) : (
+          <div className="relative mx-auto w-full max-w-3xl overflow-auto">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedFloor.imagePath!}
+              alt={selectedFloor.name}
+              className="w-full select-none"
+            />
+            {floorHotspots.map((hotspot) => {
+              const solved = hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false;
+              return (
+                <button
+                  key={hotspot.id}
+                  onClick={() => !solved && setActiveHotspotId(hotspot.id)}
+                  style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
+                  className={`absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold shadow-md ${
+                    solved
+                      ? "bg-emerald-500 text-white"
+                      : "bg-amber-400 text-white animate-pulse"
+                  }`}
+                  aria-label={hotspot.roomName}
+                >
+                  {solved ? "✓" : "?"}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {activeHotspot && activePuzzle && (

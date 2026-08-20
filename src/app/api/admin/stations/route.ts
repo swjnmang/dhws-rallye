@@ -24,11 +24,17 @@ export async function POST(request: Request) {
   const roomName = typeof body?.roomName === "string" ? body.roomName.trim() : "";
   const xPct = typeof body?.xPct === "number" ? body.xPct : null;
   const yPct = typeof body?.yPct === "number" ? body.yPct : null;
+  const lat = typeof body?.lat === "number" ? body.lat : null;
+  const lng = typeof body?.lng === "number" ? body.lng : null;
+  const radiusMeters = typeof body?.radiusMeters === "number" ? body.radiusMeters : null;
   const puzzleInput = validatePuzzleInput(body?.puzzle);
   const imageUrl =
     typeof body?.puzzle?.imageUrl === "string" && body.puzzle.imageUrl ? body.puzzle.imageUrl : null;
 
-  if (!setId || !floorId || !roomName || xPct === null || yPct === null || !puzzleInput) {
+  const hasImagePosition = xPct !== null && yPct !== null;
+  const hasMapPosition = lat !== null && lng !== null && radiusMeters !== null;
+
+  if (!setId || !floorId || !roomName || !puzzleInput || (!hasImagePosition && !hasMapPosition)) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
 
@@ -47,6 +53,9 @@ export async function POST(request: Request) {
     roomName,
     xPct,
     yPct,
+    lat,
+    lng,
+    radiusMeters,
     puzzleId,
   };
   const puzzle: Puzzle = {

@@ -1,17 +1,26 @@
 export type EventStatus = "draft" | "active" | "finished";
 
-// The 3 base floors (this school's building) are a fixed constant backed by
-// static files (public/floors/) - free, zero setup, never change.
+export type FloorKind = "image" | "map";
+
+// A floor is either a fixed image (a real floor plan, click-to-place
+// hotspots) or a live Google Map (GPS-tracked, hotspots have real
+// coordinates + a proximity radius). The 3 base floors (this school's
+// building) are a fixed constant backed by static files (public/floors/) -
+// free, zero setup, never change - always kind "image".
 export type Floor = {
   id: string;
   name: string;
-  imagePath: string;
   order: number;
+  kind: FloorKind;
+  imagePath: string | null; // set when kind === "image"
+  centerLat: number | null; // set when kind === "map"
+  centerLng: number | null;
+  zoom: number | null;
 };
 
-// Teachers can add further floors/maps per event or template (e.g. a
-// different building, a park map, ...), each with its own uploaded image
-// (Vercel Blob). Scoped by `setId` like hotspots/puzzles.
+// Teachers can add further floors per event or template (e.g. a different
+// building, a park map, an outdoor GPS area, ...). Scoped by `setId` like
+// hotspots/puzzles.
 export type CustomFloor = Floor & { setId: string };
 
 export type RallyEvent = {
@@ -41,14 +50,22 @@ export type Template = {
 // or a templateId. This keeps every event's (and template's) stations in
 // one shared top-level collection, filtered by `setId`, instead of nesting
 // them under separate parents.
+//
+// A hotspot is positioned either by percentage on an image floor
+// (xPct/yPct) or by real coordinates on a map floor (lat/lng + a
+// radiusMeters within which the group must be to open the puzzle) -
+// whichever pair applies to its floor's kind, the other stays null.
 export type Hotspot = {
   id: string;
   setId: string;
   number: number;
   floorId: string;
   roomName: string;
-  xPct: number;
-  yPct: number;
+  xPct: number | null;
+  yPct: number | null;
+  lat: number | null;
+  lng: number | null;
+  radiusMeters: number | null;
   puzzleId: string | null;
 };
 

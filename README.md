@@ -28,6 +28,11 @@ statt bei null anzufangen.
   können es antippen, um es zu vergrößern). Gespeichert in **Vercel Blob**
   (nicht Firebase Storage, da laufend und von mehreren Lehrkräften hochgeladen
   – passt nicht zu statischen Dateien wie bei den Grundrissen).
+- **Live-GPS-Ebenen:** Eine Ebene kann statt eines Bildes eine **Google Maps**
+  Karte sein (z. B. für den Schulhof oder einen Park). Stationen bekommen dann
+  echte Koordinaten + einen Radius; Gruppen sehen ihre Live-Position und
+  können ein Rätsel erst öffnen, wenn sie nah genug dran sind – das wird nicht
+  nur im Browser, sondern auch serverseitig geprüft (`/api/answer`).
 
 ## Einmalige Einrichtung
 
@@ -58,7 +63,20 @@ statt bei null anzufangen.
 4. Für lokales Testen: im Store unter „Quickstart" bzw. „.env.local" den
    Token-Wert kopieren → `BLOB_READ_WRITE_TOKEN` in `.env.local`.
 
-### 3. Umgebungsvariablen
+### 3. Google Maps API-Key anlegen (für Live-GPS-Ebenen)
+
+1. [Google Cloud Console](https://console.cloud.google.com) → Projekt
+   auswählen/anlegen.
+2. **APIs & Dienste → Bibliothek** → „Maps JavaScript API" suchen und
+   aktivieren (dafür muss ein Rechnungskonto hinterlegt sein – für den
+   Rahmen einer Schul-Rallye bleibt man im kostenlosen Kontingent von Google).
+3. **APIs & Dienste → Anmeldedaten** → „Anmeldedaten erstellen" → „API-Schlüssel".
+4. Den Schlüssel einschränken: „Anwendungseinschränkungen" → „HTTP-Verweis-URLs"
+   → eure Vercel-Domain(s) eintragen (z. B. `https://dein-projekt.vercel.app/*`
+   und für lokales Testen `http://localhost:3000/*`). „API-Einschränkungen" →
+   nur „Maps JavaScript API" erlauben.
+
+### 4. Umgebungsvariablen
 
 `.env.local.example` nach `.env.local` kopieren und ausfüllen:
 
@@ -75,8 +93,9 @@ cp .env.local.example .env.local
 - `ADMIN_SESSION_SECRET` → beliebiger langer Zufallsstring, z. B. mit
   `openssl rand -hex 32`
 - `BLOB_READ_WRITE_TOKEN` → aus Schritt 2
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` → aus Schritt 3
 
-### 4. Lokal starten
+### 5. Lokal starten
 
 ```bash
 npm install
@@ -91,12 +110,14 @@ App läuft dann auf http://localhost:3000.
 2. Neues Event anlegen (z. B. „Klasse 5a") – entweder **ohne Vorlage** (von
    Grund auf neu) oder auf Basis einer vorhandenen **Vorlage**.
 3. Unter **Rätsel einrichten**: zwischen den Ebenen wechseln und direkt auf
-   den Grundriss klicken, um eine nummerierte Station mit Rätsel
-   (Multiple-Choice, Texteingabe oder Zahl) anzulegen, optional mit Bild. Über
-   **„+ Ebene hinzufügen"** lassen sich weitere Ebenen/Karten mit eigenem Bild
-   ergänzen (und über die Ebene selbst auch wieder löschen). Fertiges Event
-   optional als **Vorlage speichern**, damit andere Lehrkräfte darauf
-   aufbauen können.
+   den Grundriss (bzw. die Karte) klicken, um eine nummerierte Station mit
+   Rätsel (Multiple-Choice, Texteingabe oder Zahl) anzulegen, optional mit
+   Bild. Über **„+ Ebene hinzufügen"** lassen sich weitere Ebenen ergänzen –
+   entweder mit eigenem Bild oder als **Google Maps (Live-GPS)**-Ebene für
+   Bereiche im Freien (dort bekommt jede Station zusätzlich einen Radius in
+   Metern, ab dem Gruppen das Rätsel öffnen dürfen). Ebenen lassen sich über
+   sich selbst auch wieder löschen. Fertiges Event optional als **Vorlage
+   speichern**, damit andere Lehrkräfte darauf aufbauen können.
 4. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder
    scannen den QR-Code / öffnen den Link von der Event-Seite), tragen
    Gruppennamen und Klasse ein und klicken auf **„Bereit"**. Sie landen in
@@ -119,7 +140,10 @@ App läuft dann auf http://localhost:3000.
 2. Alle Variablen aus `.env.local` unter _Project Settings → Environment
    Variables_ eintragen (auf Sonderzeichen im Passwort achten, siehe oben).
    `BLOB_READ_WRITE_TOKEN` ist bei mit dem Projekt verknüpftem Blob-Store
-   meist schon automatisch vorhanden.
+   meist schon automatisch vorhanden. Für `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+   die Vercel-Produktions-Domain zu den erlaubten HTTP-Verweis-URLs des
+   API-Keys hinzufügen (siehe oben), sonst funktionieren die GPS-Ebenen dort
+   nicht.
 3. Deployen. Der `ADMIN_SESSION_SECRET` sollte sich zwischen Preview- und
    Production-Deployments **nicht** ändern, sonst werden bestehende
    Admin-Logins ungültig.
@@ -147,6 +171,8 @@ src/
     floors.ts                    Die 3 festen Basis-Ebenen (statische Dateien)
     clone-stations.ts            Kopiert Ebenen/Stationen zwischen Event/Vorlage (setId-basiert)
     blob-cleanup.ts              Löscht Vercel-Blob-Bilder nur, wenn kein Doc mehr darauf zeigt
+    geo.ts                       Haversine-Abstandsberechnung (Live-GPS-Prüfung)
+    google-maps-loader.ts        Lädt die Maps JavaScript API einmalig pro Seite
     firebase-client.ts           Firestore-Client (nur Lesezugriffe im Browser)
     firebase-admin.ts            Firebase Admin SDK (lazy, nur serverseitig)
 ```

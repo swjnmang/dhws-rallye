@@ -18,18 +18,55 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const setId = typeof body?.setId === "string" ? body.setId : "";
   const name = typeof body?.name === "string" ? body.name.trim() : "";
-  const imagePath = typeof body?.imagePath === "string" ? body.imagePath : "";
+  const kind = body?.kind === "map" ? "map" : body?.kind === "image" ? "image" : "";
 
-  if (!setId || !name || !imagePath) {
+  if (!setId || !name || !kind) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+  }
+
+  let floor: CustomFloor;
+  const floorId = generateId();
+
+  if (kind === "image") {
+    const imagePath = typeof body?.imagePath === "string" ? body.imagePath : "";
+    if (!imagePath) {
+      return NextResponse.json({ error: "Bild fehlt" }, { status: 400 });
+    }
+    floor = {
+      id: floorId,
+      setId,
+      name,
+      order: 0,
+      kind: "image",
+      imagePath,
+      centerLat: null,
+      centerLng: null,
+      zoom: null,
+    };
+  } else {
+    const centerLat = typeof body?.centerLat === "number" ? body.centerLat : null;
+    const centerLng = typeof body?.centerLng === "number" ? body.centerLng : null;
+    const zoom = typeof body?.zoom === "number" ? body.zoom : null;
+    if (centerLat === null || centerLng === null || zoom === null) {
+      return NextResponse.json({ error: "Kartenausschnitt fehlt" }, { status: 400 });
+    }
+    floor = {
+      id: floorId,
+      setId,
+      name,
+      order: 0,
+      kind: "map",
+      imagePath: null,
+      centerLat,
+      centerLng,
+      zoom,
+    };
   }
 
   const floorsRef = adminDb().collection("floors");
   const countSnap = await floorsRef.where("setId", "==", setId).count().get();
-  const order = FLOORS.length + countSnap.data().count;
+  floor.order = FLOORS.length + countSnap.data().count;
 
-  const floorId = generateId();
-  const floor: CustomFloor = { id: floorId, setId, name, imagePath, order };
   await floorsRef.doc(floorId).set(floor);
 
   return NextResponse.json({ floor });

@@ -5,8 +5,9 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { FLOORS } from "@/lib/floors";
 import AdminHeader from "../../../AdminHeader";
-import HotspotForm from "./HotspotForm";
+import HotspotForm, { type Position } from "./HotspotForm";
 import AddFloorForm from "./AddFloorForm";
+import StationsMapView from "./StationsMapView";
 import type { CustomFloor, Hotspot, Puzzle } from "@/lib/types";
 
 export default function EventStationsPage({
@@ -19,7 +20,7 @@ export default function EventStationsPage({
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [selectedFloorId, setSelectedFloorId] = useState(FLOORS[0].id);
-  const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
+  const [pendingPosition, setPendingPosition] = useState<Position | null>(null);
   const [editingHotspotId, setEditingHotspotId] = useState<string | null>(null);
   const [addingFloor, setAddingFloor] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
@@ -59,12 +60,17 @@ export default function EventStationsPage({
 
   const editingHotspot = hotspots.find((h) => h.id === editingHotspotId) ?? null;
   const editingPuzzle = editingHotspot?.puzzleId ? puzzles[editingHotspot.puzzleId] : null;
+  const editingPosition: Position | null = editingHotspot
+    ? editingHotspot.lat !== null
+      ? { kind: "map", lat: editingHotspot.lat, lng: editingHotspot.lng! }
+      : { kind: "image", xPct: editingHotspot.xPct!, yPct: editingHotspot.yPct! }
+    : null;
 
   function handleImageClick(e: React.MouseEvent<HTMLImageElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     const xPct = ((e.clientX - rect.left) / rect.width) * 100;
     const yPct = ((e.clientY - rect.top) / rect.height) * 100;
-    setPendingPosition({ x: xPct, y: yPct });
+    setPendingPosition({ kind: "image", xPct, yPct });
   }
 
   async function handleDeleteFloor() {
@@ -102,8 +108,8 @@ export default function EventStationsPage({
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-slate-600">
-            Klickt auf den Grundriss, um eine neue nummerierte Station anzulegen. Bestehende
-            Marker anklicken, um sie zu bearbeiten.
+            Klickt auf den Grundriss bzw. die Karte, um eine neue nummerierte Station anzulegen.
+            Bestehende Marker anklicken, um sie zu bearbeiten.
           </p>
           <button
             onClick={handleSaveAsTemplate}
@@ -126,6 +132,7 @@ export default function EventStationsPage({
               }`}
             >
               {floor.name}
+              {floor.kind === "map" && " 📍"}
             </button>
           ))}
           <button
@@ -146,29 +153,39 @@ export default function EventStationsPage({
                 Diese Ebene löschen
               </button>
             )}
-            <div className="relative w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={currentFloor.imagePath}
-                alt={currentFloor.name}
-                onClick={handleImageClick}
-                className="w-full cursor-crosshair rounded-lg border border-slate-200"
+
+            {currentFloor.kind === "map" ? (
+              <StationsMapView
+                floor={currentFloor as CustomFloor}
+                hotspots={floorHotspots}
+                onMapClick={(lat, lng) => setPendingPosition({ kind: "map", lat, lng })}
+                onMarkerClick={(hotspotId) => setEditingHotspotId(hotspotId)}
               />
-              {floorHotspots.map((hotspot) => (
-                <button
-                  key={hotspot.id}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingHotspotId(hotspot.id);
-                  }}
-                  style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
-                  className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md"
-                  title={hotspot.roomName}
-                >
-                  {hotspot.number}
-                </button>
-              ))}
-            </div>
+            ) : (
+              <div className="relative w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={currentFloor.imagePath!}
+                  alt={currentFloor.name}
+                  onClick={handleImageClick}
+                  className="w-full cursor-crosshair rounded-lg border border-slate-200"
+                />
+                {floorHotspots.map((hotspot) => (
+                  <button
+                    key={hotspot.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingHotspotId(hotspot.id);
+                    }}
+                    style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
+                    className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md"
+                    title={hotspot.roomName}
+                  >
+                    {hotspot.number}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <ul className="flex flex-col gap-1">
               {floorHotspots.map((hotspot) => (
@@ -189,8 +206,7 @@ export default function EventStationsPage({
         <HotspotForm
           setId={eventId}
           floorId={currentFloor.id}
-          xPct={pendingPosition.x}
-          yPct={pendingPosition.y}
+          position={pendingPosition}
           existing={null}
           onClose={() => setPendingPosition(null)}
           onSaved={() => setPendingPosition(null)}
@@ -198,12 +214,11 @@ export default function EventStationsPage({
         />
       )}
 
-      {editingHotspot && (
+      {editingHotspot && editingPosition && (
         <HotspotForm
           setId={eventId}
           floorId={editingHotspot.floorId}
-          xPct={editingHotspot.xPct}
-          yPct={editingHotspot.yPct}
+          position={editingPosition}
           existing={editingPuzzle ? { hotspot: editingHotspot, puzzle: editingPuzzle } : null}
           onClose={() => setEditingHotspotId(null)}
           onSaved={() => setEditingHotspotId(null)}

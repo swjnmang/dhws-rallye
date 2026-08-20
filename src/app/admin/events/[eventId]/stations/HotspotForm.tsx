@@ -8,11 +8,16 @@ type ExistingData = {
   puzzle: Puzzle;
 };
 
+export type Position =
+  | { kind: "image"; xPct: number; yPct: number }
+  | { kind: "map"; lat: number; lng: number };
+
+const DEFAULT_RADIUS_METERS = 25;
+
 export default function HotspotForm({
   setId,
   floorId,
-  xPct,
-  yPct,
+  position,
   existing,
   onClose,
   onSaved,
@@ -20,8 +25,7 @@ export default function HotspotForm({
 }: {
   setId: string;
   floorId: string;
-  xPct: number;
-  yPct: number;
+  position: Position;
   existing: ExistingData | null;
   onClose: () => void;
   onSaved: () => void;
@@ -36,10 +40,15 @@ export default function HotspotForm({
   const [correctOptionIndex, setCorrectOptionIndex] = useState(0);
   const [correctText, setCorrectText] = useState("");
   const [correctNumber, setCorrectNumber] = useState("");
+  const [radiusMeters, setRadiusMeters] = useState(
+    existing?.hotspot.radiusMeters ?? DEFAULT_RADIUS_METERS
+  );
   const [imageUrl, setImageUrl] = useState<string | null>(existing?.puzzle.imageUrl ?? null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isMap = existing ? existing.hotspot.lat !== null : position.kind === "map";
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -82,9 +91,17 @@ export default function HotspotForm({
         ? { type, question, correctNumber: Number(correctNumber), points: 1, imageUrl }
         : { type, question, correctText, points: 1, imageUrl };
 
+    const positionFields = existing
+      ? isMap
+        ? { radiusMeters }
+        : {}
+      : position.kind === "map"
+      ? { lat: position.lat, lng: position.lng, radiusMeters }
+      : { xPct: position.xPct, yPct: position.yPct };
+
     const body = existing
-      ? { roomName, xPct, yPct, puzzle: puzzlePayload }
-      : { setId, floorId, roomName, xPct, yPct, puzzle: puzzlePayload };
+      ? { roomName, ...positionFields, puzzle: puzzlePayload }
+      : { setId, floorId, roomName, ...positionFields, puzzle: puzzlePayload };
 
     const url = existing
       ? `/api/admin/stations/${existing.hotspot.id}`
@@ -134,6 +151,26 @@ export default function HotspotForm({
             className="rounded-lg border border-slate-300 px-3 py-2"
           />
         </div>
+
+        {isMap && (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">
+              Radius, in dem das Rätsel geöffnet werden kann (Meter)
+            </label>
+            <input
+              required
+              type="number"
+              inputMode="numeric"
+              min={5}
+              value={radiusMeters}
+              onChange={(e) => setRadiusMeters(Number(e.target.value))}
+              className="rounded-lg border border-slate-300 px-3 py-2"
+            />
+            <p className="text-xs text-slate-500">
+              GPS ist im Freien meist auf ca. 10–20 m genau – ein kleinerer Radius kann die Gruppen frustrieren.
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-700">Rätsel-Typ</label>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import type { Group, Puzzle, PuzzleAnswer, RallyEvent } from "@/lib/types";
+import { distanceMeters } from "@/lib/geo";
+import type { Group, Hotspot, Puzzle, PuzzleAnswer, RallyEvent } from "@/lib/types";
 
 function normalizeText(value: string): string {
   return value
@@ -16,6 +17,8 @@ export async function POST(request: Request) {
   const groupId = typeof body?.groupId === "string" ? body.groupId : "";
   const puzzleId = typeof body?.puzzleId === "string" ? body.puzzleId : "";
   const answer = body?.answer;
+  const currentLat = typeof body?.lat === "number" ? body.lat : null;
+  const currentLng = typeof body?.lng === "number" ? body.lng : null;
 
   if (!eventId || !groupId || !puzzleId || answer === undefined) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
@@ -47,6 +50,21 @@ export async function POST(request: Request) {
   }
   if (group.solved[puzzleId]) {
     return NextResponse.json({ correct: true, allSolved: false });
+  }
+
+  // Map-based stations require the group's tablet to actually be near the
+  // hotspot's real-world coordinates - checked server-side too, not just in
+  // the browser, so this can't be bypassed via devtools.
+  const hotspotSnap = await adminDb().collection("hotspots").doc(puzzle.hotspotId).get();
+  const hotspot = hotspotSnap.data() as Hotspot | undefined;
+  if (hotspot?.lat !== null && hotspot?.lat !== undefined && hotspot.radiusMeters !== null) {
+    if (currentLat === null || currentLng === null) {
+      return NextResponse.json({ error: "Standort nicht verfügbar" }, { status: 400 });
+    }
+    const distance = distanceMeters(currentLat, currentLng, hotspot.lat, hotspot.lng!);
+    if (distance > hotspot.radiusMeters) {
+      return NextResponse.json({ error: "Ihr seid noch zu weit entfernt", tooFar: true }, { status: 403 });
+    }
   }
 
   let isCorrect = false;

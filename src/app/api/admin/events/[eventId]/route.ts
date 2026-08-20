@@ -74,9 +74,10 @@ export async function DELETE(_request: Request, { params }: Params) {
       const imageUrl = (d.data() as Puzzle).imageUrl;
       return imageUrl ? deleteBlobIfUnreferenced("puzzles", "imageUrl", imageUrl, d.id) : Promise.resolve();
     }),
-    ...floorsSnap.docs.map((d) =>
-      deleteBlobIfUnreferenced("floors", "imagePath", (d.data() as CustomFloor).imagePath, d.id)
-    ),
+    ...floorsSnap.docs.map((d) => {
+      const imagePath = (d.data() as CustomFloor).imagePath;
+      return imagePath ? deleteBlobIfUnreferenced("floors", "imagePath", imagePath, d.id) : Promise.resolve();
+    }),
   ]);
 
   const batch = db.batch();

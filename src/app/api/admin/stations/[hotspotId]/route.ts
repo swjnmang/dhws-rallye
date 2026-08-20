@@ -31,6 +31,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (typeof body?.xPct === "number") hotspotUpdate.xPct = body.xPct;
   if (typeof body?.yPct === "number") hotspotUpdate.yPct = body.yPct;
+  if (typeof body?.radiusMeters === "number") hotspotUpdate.radiusMeters = body.radiusMeters;
 
   const batch = adminDb().batch();
   if (Object.keys(hotspotUpdate).length > 0) {

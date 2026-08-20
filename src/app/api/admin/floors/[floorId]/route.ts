@@ -41,7 +41,9 @@ export async function DELETE(_request: Request, { params }: Params) {
   );
 
   const imagePath = (floorSnap.data() as CustomFloor).imagePath;
-  await deleteBlobIfUnreferenced("floors", "imagePath", imagePath, floorId);
+  if (imagePath) {
+    await deleteBlobIfUnreferenced("floors", "imagePath", imagePath, floorId);
+  }
 
   const batch = db.batch();
   hotspotsSnap.docs.forEach((d) => batch.delete(d.ref));
