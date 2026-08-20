@@ -103,4 +103,7 @@ export type Group = {
   solved: Record<string, SolvedEntry>;
   progress: Record<string, { attempts: number }>;
   totalSeconds: number | null;
+  // Motivational gamification counter, +5 per solved puzzle. Not used for
+  // ranking (that's totalSeconds) - purely a morale display for students.
+  xp: number;
 };

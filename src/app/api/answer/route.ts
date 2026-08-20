@@ -91,6 +91,7 @@ export async function POST(request: Request) {
 
   if (isCorrect) {
     update[`solved.${puzzleId}`] = { solvedAt: now, attempts };
+    update.xp = (group.xp ?? 0) + 5;
 
     const puzzlesCountSnap = await adminDb()
       .collection("puzzles")

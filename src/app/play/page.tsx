@@ -184,7 +184,7 @@ export default function PlayPage() {
             {session.groupName} · Klasse {session.className}
           </p>
           <p className="text-sm font-medium text-slate-700">
-            {solvedCount} / {totalPuzzles} Rätsel gelöst
+            {solvedCount} / {totalPuzzles} Rätsel gelöst · {group.xp ?? 0} XP
           </p>
         </div>
         <p className="font-mono text-2xl font-bold tabular-nums">

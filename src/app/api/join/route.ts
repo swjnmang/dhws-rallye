@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     solved: {},
     progress: {},
     totalSeconds: null,
+    xp: 0,
   };
 
   await eventDoc.ref.collection("groups").doc(groupId).set(group);
