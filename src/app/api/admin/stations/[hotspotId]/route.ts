@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
+import { deleteImageIfUnreferenced } from "@/lib/puzzle-image-cleanup";
 import type { Puzzle, PuzzleAnswer } from "@/lib/types";
 
 type Params = { params: Promise<{ hotspotId: string }> };
@@ -41,19 +42,32 @@ export async function PATCH(request: Request, { params }: Params) {
     if (!puzzleInput) {
       return NextResponse.json({ error: "Ungültiges Rätsel" }, { status: 400 });
     }
+    const imageUrl =
+      typeof body.puzzle.imageUrl === "string" && body.puzzle.imageUrl
+        ? body.puzzle.imageUrl
+        : null;
+
     const puzzleId = hotspotSnap.data()?.puzzleId as string;
+    const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
+    const puzzleSnap = await puzzleRef.get();
+    const previousImageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
+    if (previousImageUrl && previousImageUrl !== imageUrl) {
+      await deleteImageIfUnreferenced(previousImageUrl, puzzleId);
+    }
+
     const puzzleUpdate: Partial<Puzzle> = {
       type: puzzleInput.type,
       question: puzzleInput.question,
       options: puzzleInput.options,
       points: puzzleInput.points,
+      imageUrl,
     };
     const answerUpdate: PuzzleAnswer = {
       correctOptionIndex: puzzleInput.correctOptionIndex,
       correctText: puzzleInput.correctText,
       correctNumber: puzzleInput.correctNumber,
     };
-    batch.update(adminDb().collection("puzzles").doc(puzzleId), puzzleUpdate);
+    batch.update(puzzleRef, puzzleUpdate);
     batch.set(adminDb().collection("puzzleAnswers").doc(puzzleId), answerUpdate);
   }
 
@@ -82,7 +96,13 @@ export async function DELETE(_request: Request, { params }: Params) {
   const batch = adminDb().batch();
   batch.delete(hotspotRef);
   if (puzzleId) {
-    batch.delete(adminDb().collection("puzzles").doc(puzzleId));
+    const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
+    const puzzleSnap = await puzzleRef.get();
+    const imageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
+    if (imageUrl) {
+      await deleteImageIfUnreferenced(imageUrl, puzzleId);
+    }
+    batch.delete(puzzleRef);
     batch.delete(adminDb().collection("puzzleAnswers").doc(puzzleId));
   }
   await batch.commit();

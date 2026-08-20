@@ -36,8 +36,27 @@ export default function HotspotForm({
   const [correctOptionIndex, setCorrectOptionIndex] = useState(0);
   const [correctText, setCorrectText] = useState("");
   const [correctNumber, setCorrectNumber] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(existing?.puzzle.imageUrl ?? null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingImage(true);
+    setError(null);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/admin/puzzle-images", { method: "POST", body: formData });
+    setUploadingImage(false);
+    if (!res.ok) {
+      setError("Bild-Upload fehlgeschlagen");
+      return;
+    }
+    const data = await res.json();
+    setImageUrl(data.url);
+  }
 
   function updateOption(index: number, value: string) {
     setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
@@ -57,10 +76,11 @@ export default function HotspotForm({
             options: cleanedOptions,
             correctOptionIndex,
             points: 1,
+            imageUrl,
           }
         : type === "number"
-        ? { type, question, correctNumber: Number(correctNumber), points: 1 }
-        : { type, question, correctText, points: 1 };
+        ? { type, question, correctNumber: Number(correctNumber), points: 1, imageUrl }
+        : { type, question, correctText, points: 1, imageUrl };
 
     const body = existing
       ? { roomName, xPct, yPct, puzzle: puzzlePayload }
@@ -204,6 +224,34 @@ export default function HotspotForm({
             />
           </div>
         )}
+
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-slate-700">Bild (optional)</label>
+          {imageUrl && (
+            <div className="relative w-fit">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl} alt="" className="h-32 rounded-lg border border-slate-200" />
+              <button
+                type="button"
+                onClick={() => setImageUrl(null)}
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow"
+                aria-label="Bild entfernen"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <label className="w-fit cursor-pointer rounded-lg border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-500">
+            {uploadingImage ? "Lädt hoch…" : imageUrl ? "Bild ersetzen" : "Bild hochladen"}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageChange}
+              disabled={uploadingImage}
+            />
+          </label>
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

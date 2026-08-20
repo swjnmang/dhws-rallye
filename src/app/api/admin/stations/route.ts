@@ -25,6 +25,8 @@ export async function POST(request: Request) {
   const xPct = typeof body?.xPct === "number" ? body.xPct : null;
   const yPct = typeof body?.yPct === "number" ? body.yPct : null;
   const puzzleInput = validatePuzzleInput(body?.puzzle);
+  const imageUrl =
+    typeof body?.puzzle?.imageUrl === "string" && body.puzzle.imageUrl ? body.puzzle.imageUrl : null;
 
   if (!setId || !floorId || !roomName || xPct === null || yPct === null || !puzzleInput) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
@@ -55,6 +57,7 @@ export async function POST(request: Request) {
     question: puzzleInput.question,
     options: puzzleInput.options,
     points: puzzleInput.points,
+    imageUrl,
   };
   const answer: PuzzleAnswer = {
     correctOptionIndex: puzzleInput.correctOptionIndex,

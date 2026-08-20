@@ -22,6 +22,10 @@ statt bei null anzufangen.
 - **Sicherheit:** Alle Schreibzugriffe und die Rätsel-Auswertung laufen über
   serverseitige Route-Handler mit dem Firebase Admin SDK. Lösungen werden nie
   an den Client geschickt.
+- **Rätsel-Bilder:** Lehrkräfte können pro Rätsel ein Bild hochladen (Schüler
+  können es antippen, um es zu vergrößern). Gespeichert in **Vercel Blob**
+  (nicht Firebase Storage, da laufend und von mehreren Lehrkräften hochgeladen
+  – passt nicht zu statischen Dateien wie bei den Grundrissen).
 
 ## Einmalige Einrichtung
 
@@ -40,7 +44,19 @@ statt bei null anzufangen.
    Firebase Console unter _Firestore Database → Regeln_ einfügen und
    veröffentlichen.
 
-### 2. Umgebungsvariablen
+### 2. Vercel Blob Store anlegen (für Rätsel-Bilder)
+
+1. Im [Vercel-Dashboard](https://vercel.com/dashboard) → Projekt → Tab
+   **„Storage"** → **„Create Database"** → **„Blob"**.
+2. Access: **„Public"** wählen (nicht „Private" – die Bilder werden den
+   Schülern direkt per URL angezeigt, ohne Token).
+3. Beim Erstellen das Häkchen **„Add a read-write token env var to this
+   connection"** setzen. Ist der Store mit dem Vercel-Projekt verknüpft,
+   landet `BLOB_READ_WRITE_TOKEN` automatisch in den Projekt-Umgebungsvariablen.
+4. Für lokales Testen: im Store unter „Quickstart" bzw. „.env.local" den
+   Token-Wert kopieren → `BLOB_READ_WRITE_TOKEN` in `.env.local`.
+
+### 3. Umgebungsvariablen
 
 `.env.local.example` nach `.env.local` kopieren und ausfüllen:
 
@@ -56,8 +72,9 @@ cp .env.local.example .env.local
   abgeschnitten.
 - `ADMIN_SESSION_SECRET` → beliebiger langer Zufallsstring, z. B. mit
   `openssl rand -hex 32`
+- `BLOB_READ_WRITE_TOKEN` → aus Schritt 2
 
-### 3. Lokal starten
+### 4. Lokal starten
 
 ```bash
 npm install
@@ -73,8 +90,9 @@ App läuft dann auf http://localhost:3000.
    Grund auf neu) oder auf Basis einer vorhandenen **Vorlage**.
 3. Unter **Rätsel einrichten**: zwischen den drei Ebenen wechseln und direkt
    auf den Grundriss klicken, um eine nummerierte Station mit Rätsel
-   (Multiple-Choice, Texteingabe oder Zahl) anzulegen. Optional als **Vorlage
-   speichern**, damit andere Lehrkräfte darauf aufbauen können.
+   (Multiple-Choice, Texteingabe oder Zahl) anzulegen, optional mit Bild.
+   Optional als **Vorlage speichern**, damit andere Lehrkräfte darauf
+   aufbauen können.
 4. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder
    scannen den QR-Code / öffnen den Link von der Event-Seite), tragen
    Gruppennamen und Klasse ein und klicken auf **„Bereit"**. Sie landen in
@@ -96,6 +114,8 @@ App läuft dann auf http://localhost:3000.
    „Add New… → Project" → GitHub-Repo auswählen).
 2. Alle Variablen aus `.env.local` unter _Project Settings → Environment
    Variables_ eintragen (auf Sonderzeichen im Passwort achten, siehe oben).
+   `BLOB_READ_WRITE_TOKEN` ist bei mit dem Projekt verknüpftem Blob-Store
+   meist schon automatisch vorhanden.
 3. Deployen. Der `ADMIN_SESSION_SECRET` sollte sich zwischen Preview- und
    Production-Deployments **nicht** ändern, sonst werden bestehende
    Admin-Logins ungültig.

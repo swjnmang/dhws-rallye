@@ -58,6 +58,7 @@ export type Puzzle = {
   question: string;
   options: string[] | null;
   points: number;
+  imageUrl: string | null;
 };
 
 export type PuzzleAnswer = {

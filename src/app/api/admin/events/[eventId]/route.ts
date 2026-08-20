@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
-import type { EventStatus } from "@/lib/types";
+import { deleteImageIfUnreferenced } from "@/lib/puzzle-image-cleanup";
+import type { EventStatus, Puzzle } from "@/lib/types";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -66,6 +67,13 @@ export async function DELETE(_request: Request, { params }: Params) {
     db.collection("hotspots").where("setId", "==", eventId).get(),
     db.collection("puzzles").where("setId", "==", eventId).get(),
   ]);
+
+  await Promise.all(
+    puzzlesSnap.docs.map((d) => {
+      const imageUrl = (d.data() as Puzzle).imageUrl;
+      return imageUrl ? deleteImageIfUnreferenced(imageUrl, d.id) : Promise.resolve();
+    })
+  );
 
   const batch = db.batch();
   groupsSnap.docs.forEach((d) => batch.delete(d.ref));

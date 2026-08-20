@@ -18,6 +18,7 @@ export default function PuzzleModal({
   const [numberAnswer, setNumberAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [wrongAttempt, setWrongAttempt] = useState(false);
+  const [imageEnlarged, setImageEnlarged] = useState(false);
 
   async function submit(answer: string | number) {
     setSubmitting(true);
@@ -36,6 +37,16 @@ export default function PuzzleModal({
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <p className="text-sm font-medium text-slate-500">{roomName}</p>
         <h2 className="mt-1 text-xl font-bold text-slate-900">{puzzle.question}</h2>
+
+        {puzzle.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={puzzle.imageUrl}
+            alt=""
+            onClick={() => setImageEnlarged(true)}
+            className="mt-4 max-h-48 w-full cursor-zoom-in rounded-xl border border-slate-200 object-cover"
+          />
+        )}
 
         {puzzle.type === "mc" && puzzle.options && (
           <div className="mt-6 flex flex-col gap-3">
@@ -117,6 +128,20 @@ export default function PuzzleModal({
           Schließen
         </button>
       </div>
+
+      {imageEnlarged && puzzle.imageUrl && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setImageEnlarged(false)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={puzzle.imageUrl}
+            alt=""
+            className="max-h-full max-w-full cursor-zoom-out rounded-lg object-contain"
+          />
+        </div>
+      )}
     </div>
   );
 }
