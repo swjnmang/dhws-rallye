@@ -13,12 +13,14 @@ statt bei null anzufangen.
 
 - **Frontend/Server:** Next.js (App Router, TypeScript), gehostet auf Vercel
 - **Daten:** Firebase Firestore (kostenloser Spark-Tarif reicht aus)
-- **Grundriss-Bilder:** liegen als statische Dateien unter
-  [`public/floors/`](./public/floors) und werden in
-  [`src/lib/floors.ts`](./src/lib/floors.ts) referenziert – Firebase Storage
-  wird bewusst **nicht** verwendet, da es inzwischen den kostenpflichtigen
-  Blaze-Tarif voraussetzt. Um einen Grundriss zu ändern: Bilddatei am selben
-  Pfad ersetzen und neu deployen.
+- **Grundriss-Bilder:** Die 3 festen Basis-Ebenen (dieses Schulgebäude) liegen
+  als statische Dateien unter [`public/floors/`](./public/floors) und werden
+  in [`src/lib/floors.ts`](./src/lib/floors.ts) referenziert – Firebase
+  Storage wird bewusst **nicht** verwendet. Um einen Grundriss zu ändern:
+  Bilddatei am selben Pfad ersetzen und neu deployen. Lehrkräfte können pro
+  Event zusätzlich beliebig viele **eigene Ebenen** hinzufügen (z. B. ein
+  anderes Gebäude, eine Park-Karte) – die Bilder dafür gehen über Vercel Blob
+  (siehe unten), genau wie Rätsel-Bilder.
 - **Sicherheit:** Alle Schreibzugriffe und die Rätsel-Auswertung laufen über
   serverseitige Route-Handler mit dem Firebase Admin SDK. Lösungen werden nie
   an den Client geschickt.
@@ -44,7 +46,7 @@ statt bei null anzufangen.
    Firebase Console unter _Firestore Database → Regeln_ einfügen und
    veröffentlichen.
 
-### 2. Vercel Blob Store anlegen (für Rätsel-Bilder)
+### 2. Vercel Blob Store anlegen (für Rätsel- und Ebenen-Bilder)
 
 1. Im [Vercel-Dashboard](https://vercel.com/dashboard) → Projekt → Tab
    **„Storage"** → **„Create Database"** → **„Blob"**.
@@ -88,10 +90,12 @@ App läuft dann auf http://localhost:3000.
 1. Unter `/admin` mit dem Lehrkraft-Passwort anmelden.
 2. Neues Event anlegen (z. B. „Klasse 5a") – entweder **ohne Vorlage** (von
    Grund auf neu) oder auf Basis einer vorhandenen **Vorlage**.
-3. Unter **Rätsel einrichten**: zwischen den drei Ebenen wechseln und direkt
-   auf den Grundriss klicken, um eine nummerierte Station mit Rätsel
-   (Multiple-Choice, Texteingabe oder Zahl) anzulegen, optional mit Bild.
-   Optional als **Vorlage speichern**, damit andere Lehrkräfte darauf
+3. Unter **Rätsel einrichten**: zwischen den Ebenen wechseln und direkt auf
+   den Grundriss klicken, um eine nummerierte Station mit Rätsel
+   (Multiple-Choice, Texteingabe oder Zahl) anzulegen, optional mit Bild. Über
+   **„+ Ebene hinzufügen"** lassen sich weitere Ebenen/Karten mit eigenem Bild
+   ergänzen (und über die Ebene selbst auch wieder löschen). Fertiges Event
+   optional als **Vorlage speichern**, damit andere Lehrkräfte darauf
    aufbauen können.
 4. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder
    scannen den QR-Code / öffnen den Link von der Event-Seite), tragen
@@ -140,7 +144,9 @@ src/
       admin/                     Alle admin-geschützten Mutationen (Events, Stationen, Vorlagen)
   lib/
     types.ts                     Gemeinsame Datentypen
-    clone-stations.ts            Kopiert Stationen zwischen Event/Vorlage (setId-basiert)
+    floors.ts                    Die 3 festen Basis-Ebenen (statische Dateien)
+    clone-stations.ts            Kopiert Ebenen/Stationen zwischen Event/Vorlage (setId-basiert)
+    blob-cleanup.ts              Löscht Vercel-Blob-Bilder nur, wenn kein Doc mehr darauf zeigt
     firebase-client.ts           Firestore-Client (nur Lesezugriffe im Browser)
     firebase-admin.ts            Firebase Admin SDK (lazy, nur serverseitig)
 ```

@@ -8,13 +8,14 @@ import { getGroupSession, clearGroupSession, type GroupSession } from "@/lib/ses
 import { formatDuration } from "@/lib/format";
 import { FLOORS } from "@/lib/floors";
 import PuzzleModal from "./PuzzleModal";
-import type { RallyEvent, Hotspot, Puzzle, Group } from "@/lib/types";
+import type { RallyEvent, CustomFloor, Hotspot, Puzzle, Group } from "@/lib/types";
 
 export default function PlayPage() {
   const router = useRouter();
   const [session, setSession] = useState<GroupSession | null | undefined>(undefined);
 
   const [event, setEvent] = useState<RallyEvent | null>(null);
+  const [customFloors, setCustomFloors] = useState<CustomFloor[]>([]);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [group, setGroup] = useState<Group | null>(null);
@@ -57,6 +58,12 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (!session) return;
+    const q = query(collection(db, "floors"), where("setId", "==", session.eventId));
+    return onSnapshot(q, (snap) => setCustomFloors(snap.docs.map((d) => d.data() as CustomFloor)));
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
     const q = query(collection(db, "hotspots"), where("setId", "==", session.eventId));
     return onSnapshot(q, (snap) => setHotspots(snap.docs.map((d) => d.data() as Hotspot)));
   }, [session]);
@@ -88,6 +95,11 @@ export default function PlayPage() {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, [group, event]);
+
+  const allFloors = useMemo(
+    () => [...FLOORS, ...customFloors].sort((a, b) => a.order - b.order),
+    [customFloors]
+  );
 
   const totalPuzzles = Object.keys(puzzles).length;
   const solvedCount = group ? Object.keys(group.solved).length : 0;
@@ -156,7 +168,7 @@ export default function PlayPage() {
     );
   }
 
-  const selectedFloor = FLOORS.find((f) => f.id === selectedFloorId)!;
+  const selectedFloor = allFloors.find((f) => f.id === selectedFloorId) ?? allFloors[0];
 
   return (
     <main className="flex flex-1 flex-col">
@@ -174,9 +186,9 @@ export default function PlayPage() {
         </p>
       </header>
 
-      {FLOORS.length > 1 && (
+      {allFloors.length > 1 && (
         <nav className="flex gap-2 overflow-x-auto border-b border-slate-200 bg-white px-4 py-2">
-          {FLOORS.map((floor) => (
+          {allFloors.map((floor) => (
             <button
               key={floor.id}
               onClick={() => setSelectedFloorId(floor.id)}

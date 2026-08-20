@@ -1,12 +1,13 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { FLOORS } from "@/lib/floors";
 import AdminHeader from "../../../AdminHeader";
 import HotspotForm from "./HotspotForm";
-import type { Hotspot, Puzzle } from "@/lib/types";
+import AddFloorForm from "./AddFloorForm";
+import type { CustomFloor, Hotspot, Puzzle } from "@/lib/types";
 
 export default function EventStationsPage({
   params,
@@ -14,12 +15,19 @@ export default function EventStationsPage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = use(params);
+  const [customFloors, setCustomFloors] = useState<CustomFloor[]>([]);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [selectedFloorId, setSelectedFloorId] = useState(FLOORS[0].id);
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
   const [editingHotspotId, setEditingHotspotId] = useState<string | null>(null);
+  const [addingFloor, setAddingFloor] = useState(false);
   const [savingTemplate, setSavingTemplate] = useState(false);
+
+  useEffect(() => {
+    const q = query(collection(db, "floors"), where("setId", "==", eventId));
+    return onSnapshot(q, (snap) => setCustomFloors(snap.docs.map((d) => d.data() as CustomFloor)));
+  }, [eventId]);
 
   useEffect(() => {
     const q = query(collection(db, "hotspots"), where("setId", "==", eventId));
@@ -38,9 +46,15 @@ export default function EventStationsPage({
     });
   }, [eventId]);
 
-  const currentFloor = FLOORS.find((f) => f.id === selectedFloorId)!;
+  const allFloors = useMemo(
+    () => [...FLOORS, ...customFloors].sort((a, b) => a.order - b.order),
+    [customFloors]
+  );
+
+  const currentFloor = allFloors.find((f) => f.id === selectedFloorId) ?? allFloors[0];
+  const currentCustomFloor = customFloors.find((f) => f.id === currentFloor?.id) ?? null;
   const floorHotspots = hotspots
-    .filter((h) => h.floorId === currentFloor.id)
+    .filter((h) => h.floorId === currentFloor?.id)
     .sort((a, b) => a.number - b.number);
 
   const editingHotspot = hotspots.find((h) => h.id === editingHotspotId) ?? null;
@@ -51,6 +65,18 @@ export default function EventStationsPage({
     const xPct = ((e.clientX - rect.left) / rect.width) * 100;
     const yPct = ((e.clientY - rect.top) / rect.height) * 100;
     setPendingPosition({ x: xPct, y: yPct });
+  }
+
+  async function handleDeleteFloor() {
+    if (!currentCustomFloor) return;
+    if (
+      !confirm(
+        `Ebene "${currentCustomFloor.name}" wirklich löschen? Alle Räume/Rätsel darauf werden mitgelöscht.`
+      )
+    )
+      return;
+    await fetch(`/api/admin/floors/${currentCustomFloor.id}`, { method: "DELETE" });
+    setSelectedFloorId(FLOORS[0].id);
   }
 
   async function handleSaveAsTemplate() {
@@ -88,8 +114,8 @@ export default function EventStationsPage({
           </button>
         </div>
 
-        <nav className="flex gap-2">
-          {FLOORS.map((floor) => (
+        <nav className="flex flex-wrap items-center gap-2">
+          {allFloors.map((floor) => (
             <button
               key={floor.id}
               onClick={() => setSelectedFloorId(floor.id)}
@@ -102,48 +128,64 @@ export default function EventStationsPage({
               {floor.name}
             </button>
           ))}
+          <button
+            onClick={() => setAddingFloor(true)}
+            className="rounded-full border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-500"
+          >
+            + Ebene hinzufügen
+          </button>
         </nav>
 
-        <section className="flex flex-col gap-3">
-          <div className="relative w-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={currentFloor.imagePath}
-              alt={currentFloor.name}
-              onClick={handleImageClick}
-              className="w-full cursor-crosshair rounded-lg border border-slate-200"
-            />
-            {floorHotspots.map((hotspot) => (
+        {currentFloor && (
+          <section className="flex flex-col gap-3">
+            {currentCustomFloor && (
               <button
-                key={hotspot.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setEditingHotspotId(hotspot.id);
-                }}
-                style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
-                className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md"
-                title={hotspot.roomName}
+                onClick={handleDeleteFloor}
+                className="w-fit text-sm font-medium text-red-600 hover:text-red-800"
               >
-                {hotspot.number}
+                Diese Ebene löschen
               </button>
-            ))}
-          </div>
+            )}
+            <div className="relative w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={currentFloor.imagePath}
+                alt={currentFloor.name}
+                onClick={handleImageClick}
+                className="w-full cursor-crosshair rounded-lg border border-slate-200"
+              />
+              {floorHotspots.map((hotspot) => (
+                <button
+                  key={hotspot.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingHotspotId(hotspot.id);
+                  }}
+                  style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
+                  className="absolute flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white shadow-md"
+                  title={hotspot.roomName}
+                >
+                  {hotspot.number}
+                </button>
+              ))}
+            </div>
 
-          <ul className="flex flex-col gap-1">
-            {floorHotspots.map((hotspot) => (
-              <li key={hotspot.id} className="text-sm text-slate-600">
-                <span className="font-semibold text-slate-800">#{hotspot.number}</span>{" "}
-                {hotspot.roomName}
-                {hotspot.puzzleId && puzzles[hotspot.puzzleId] && (
-                  <span className="text-slate-400"> — {puzzles[hotspot.puzzleId].question}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </section>
+            <ul className="flex flex-col gap-1">
+              {floorHotspots.map((hotspot) => (
+                <li key={hotspot.id} className="text-sm text-slate-600">
+                  <span className="font-semibold text-slate-800">#{hotspot.number}</span>{" "}
+                  {hotspot.roomName}
+                  {hotspot.puzzleId && puzzles[hotspot.puzzleId] && (
+                    <span className="text-slate-400"> — {puzzles[hotspot.puzzleId].question}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
 
-      {pendingPosition && (
+      {pendingPosition && currentFloor && (
         <HotspotForm
           setId={eventId}
           floorId={currentFloor.id}
@@ -166,6 +208,14 @@ export default function EventStationsPage({
           onClose={() => setEditingHotspotId(null)}
           onSaved={() => setEditingHotspotId(null)}
           onDeleted={() => setEditingHotspotId(null)}
+        />
+      )}
+
+      {addingFloor && (
+        <AddFloorForm
+          setId={eventId}
+          onClose={() => setAddingFloor(false)}
+          onSaved={() => setAddingFloor(false)}
         />
       )}
     </>

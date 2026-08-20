@@ -19,6 +19,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Teacher-added extra floors/maps (setId-scoped like hotspots/puzzles).
+    match /floors/{floorId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Never readable by clients: this is where correct answers live.
     match /puzzleAnswers/{puzzleId} {
       allow read, write: if false;

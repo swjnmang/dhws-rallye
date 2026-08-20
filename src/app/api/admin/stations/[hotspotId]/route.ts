@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
-import { deleteImageIfUnreferenced } from "@/lib/puzzle-image-cleanup";
+import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
 import type { Puzzle, PuzzleAnswer } from "@/lib/types";
 
 type Params = { params: Promise<{ hotspotId: string }> };
@@ -52,7 +52,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const puzzleSnap = await puzzleRef.get();
     const previousImageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
     if (previousImageUrl && previousImageUrl !== imageUrl) {
-      await deleteImageIfUnreferenced(previousImageUrl, puzzleId);
+      await deleteBlobIfUnreferenced("puzzles", "imageUrl", previousImageUrl, puzzleId);
     }
 
     const puzzleUpdate: Partial<Puzzle> = {
@@ -100,7 +100,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     const puzzleSnap = await puzzleRef.get();
     const imageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
     if (imageUrl) {
-      await deleteImageIfUnreferenced(imageUrl, puzzleId);
+      await deleteBlobIfUnreferenced("puzzles", "imageUrl", imageUrl, puzzleId);
     }
     batch.delete(puzzleRef);
     batch.delete(adminDb().collection("puzzleAnswers").doc(puzzleId));

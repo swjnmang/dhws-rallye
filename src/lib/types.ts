@@ -1,13 +1,18 @@
 export type EventStatus = "draft" | "active" | "finished";
 
-// A floor's image is a static file (public/floors/) - the building itself
-// never changes, so this is a fixed constant, not Firestore data.
+// The 3 base floors (this school's building) are a fixed constant backed by
+// static files (public/floors/) - free, zero setup, never change.
 export type Floor = {
   id: string;
   name: string;
   imagePath: string;
   order: number;
 };
+
+// Teachers can add further floors/maps per event or template (e.g. a
+// different building, a park map, ...), each with its own uploaded image
+// (Vercel Blob). Scoped by `setId` like hotspots/puzzles.
+export type CustomFloor = Floor & { setId: string };
 
 export type RallyEvent = {
   id: string;

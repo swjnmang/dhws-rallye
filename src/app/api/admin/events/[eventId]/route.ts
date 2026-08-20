@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
-import { deleteImageIfUnreferenced } from "@/lib/puzzle-image-cleanup";
-import type { EventStatus, Puzzle } from "@/lib/types";
+import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
+import type { CustomFloor, EventStatus, Puzzle } from "@/lib/types";
 
 type Params = { params: Promise<{ eventId: string }> };
 
@@ -62,18 +62,22 @@ export async function DELETE(_request: Request, { params }: Params) {
   const db = adminDb();
   const eventRef = db.collection("events").doc(eventId);
 
-  const [groupsSnap, hotspotsSnap, puzzlesSnap] = await Promise.all([
+  const [groupsSnap, hotspotsSnap, puzzlesSnap, floorsSnap] = await Promise.all([
     eventRef.collection("groups").get(),
     db.collection("hotspots").where("setId", "==", eventId).get(),
     db.collection("puzzles").where("setId", "==", eventId).get(),
+    db.collection("floors").where("setId", "==", eventId).get(),
   ]);
 
-  await Promise.all(
-    puzzlesSnap.docs.map((d) => {
+  await Promise.all([
+    ...puzzlesSnap.docs.map((d) => {
       const imageUrl = (d.data() as Puzzle).imageUrl;
-      return imageUrl ? deleteImageIfUnreferenced(imageUrl, d.id) : Promise.resolve();
-    })
-  );
+      return imageUrl ? deleteBlobIfUnreferenced("puzzles", "imageUrl", imageUrl, d.id) : Promise.resolve();
+    }),
+    ...floorsSnap.docs.map((d) =>
+      deleteBlobIfUnreferenced("floors", "imagePath", (d.data() as CustomFloor).imagePath, d.id)
+    ),
+  ]);
 
   const batch = db.batch();
   groupsSnap.docs.forEach((d) => batch.delete(d.ref));
@@ -82,6 +86,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     batch.delete(d.ref);
     batch.delete(db.collection("puzzleAnswers").doc(d.id));
   });
+  floorsSnap.docs.forEach((d) => batch.delete(d.ref));
   batch.delete(eventRef);
   await batch.commit();
 
