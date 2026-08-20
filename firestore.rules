@@ -10,11 +10,6 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
 
-      match /floors/{floorId} {
-        allow read: if true;
-        allow write: if false;
-      }
-
       match /hotspots/{hotspotId} {
         allow read: if true;
         allow write: if false;
