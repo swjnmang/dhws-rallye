@@ -9,7 +9,10 @@ Jedes Event (= ein Spiel-Durchlauf, z. B. für eine Klasse) hat seine eigenen
 Räume/Stationen mit Rätseln, die unter „Rätsel einrichten" pro Event aufgebaut
 werden. Ein fertig aufgebautes Event kann als **Vorlage** gespeichert werden,
 damit andere Lehrkräfte beim Anlegen eines neuen Events darauf aufbauen können,
-statt bei null anzufangen.
+statt bei null anzufangen – Vorlagen lassen sich später über denselben Editor
+auch wieder öffnen und weiterbearbeiten. Ein Event, das seit über 24 Stunden
+läuft, wird automatisch als „beendet" markiert und wandert in einen eigenen
+Bereich in der Event-Liste.
 
 - **Frontend/Server:** Next.js (App Router, TypeScript), gehostet auf Vercel
 - **Daten:** Firebase Firestore (kostenloser Spark-Tarif reicht aus)
@@ -119,7 +122,9 @@ App läuft dann auf http://localhost:3000.
    angehängt, lassen sich per Ziehen oder über die ‹/›-Pfeile neu anordnen
    (die 3 festen Basis-Ebenen bleiben dabei immer vorne) und über sich selbst
    auch wieder löschen. Fertiges Event optional als **Vorlage speichern**,
-   damit andere Lehrkräfte darauf aufbauen können.
+   damit andere Lehrkräfte darauf aufbauen können – bestehende Vorlagen lassen
+   sich unter „Events" anklicken, um sie im selben Editor zu bearbeiten. Zum
+   Löschen einer Vorlage muss ihr Name zur Bestätigung eingetippt werden.
 4. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder
    scannen den QR-Code / öffnen den Link von der Event-Seite), tragen
    Gruppennamen und Klasse ein und klicken auf **„Bereit"**. Sie landen in
@@ -129,6 +134,10 @@ App läuft dann auf http://localhost:3000.
    die gemeinsame Zeitmessung und alle Gruppen wechseln automatisch ins Spiel.
 6. Fortschritt und Zeiten live unter **Live-Übersicht** verfolgen, finale
    **Rangliste** nach Abschluss aller Gruppen anzeigen (z. B. per Beamer).
+7. Läuft ein Event länger als 24 Stunden, wird es automatisch als „beendet"
+   markiert (Prüfung läuft, sobald jemand die Events-Liste oder das Event
+   öffnet – kein Cron-Job nötig) und erscheint unter „Beendete Events". Von
+   dort lässt es sich über die Event-Seite jederzeit wieder öffnen.
 
 > Hinweis: Beim Bearbeiten eines bestehenden Rätsels muss die richtige
 > Antwort erneut eingegeben werden – sie wird aus Sicherheitsgründen nie an
@@ -159,15 +168,20 @@ src/
     join/                        Gruppen-Beitritt (Code/QR/Link) + Lobby
     play/                        Spielansicht der Gruppen (Grundriss + Rätsel + Timer)
     admin/                       Lehrkraft-Bereich (passwortgeschützt via src/proxy.ts)
-      events/                    Event-Liste + Vorlagen-Auswahl beim Anlegen
+      events/                    Event-Liste (laufende + beendete) + Vorlagen-Auswahl/-Verwaltung
       events/[eventId]           Übersicht, Status, Lobby
-      events/[eventId]/stations  Hotspot-/Rätsel-Editor + "Als Vorlage speichern"
+      events/[eventId]/stations  Editor-Seite (nutzt StationsEditor) + "Als Vorlage speichern"
       events/[eventId]/live      Live-Dashboard
       events/[eventId]/results   Abschluss-Rangliste
+      templates/[templateId]/stations   Dieselbe Editor-Seite zum Bearbeiten einer Vorlage
     api/
       join/                      Gruppen-Beitritt (öffentlich)
       answer/                    Rätsel-Auswertung (öffentlich, prüft serverseitig)
       admin/                     Alle admin-geschützten Mutationen (Events, Stationen, Vorlagen)
+      admin/events/close-stale   Markiert Events > 24h als "finished" (bei Bedarf aufgerufen)
+  components/
+    stations-editor/             Gemeinsamer Hotspot-/Rätsel-/Ebenen-Editor für Event & Vorlage
+    ConfirmDeleteByName.tsx      "Namen eintippen"-Bestätigung für unwiderrufliche Löschungen
   lib/
     types.ts                     Gemeinsame Datentypen
     floors.ts                    Die 3 festen Basis-Ebenen (statische Dateien)

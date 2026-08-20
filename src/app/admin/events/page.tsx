@@ -5,6 +5,7 @@ import Link from "next/link";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "../AdminHeader";
+import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
 import type { RallyEvent, Template } from "@/lib/types";
 
 const STATUS_LABEL: Record<RallyEvent["status"], string> = {
@@ -20,6 +21,7 @@ export default function AdminEventsPage() {
   const [templateId, setTemplateId] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deletingTemplate, setDeletingTemplate] = useState<Template | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
@@ -33,6 +35,14 @@ export default function AdminEventsPage() {
     return onSnapshot(q, (snap) => {
       setTemplates(snap.docs.map((d) => d.data() as Template));
     });
+  }, []);
+
+  // Auto-close is enforced server-side (an event older than 24h flips to
+  // "finished" the next time anything touches it), but nudge that check
+  // whenever a teacher opens this list too, so the split below stays fresh
+  // without waiting for a group or admin action to trigger it elsewhere.
+  useEffect(() => {
+    fetch("/api/admin/events/close-stale", { method: "POST" }).catch(() => {});
   }, []);
 
   async function handleCreate(e: React.FormEvent) {
@@ -54,9 +64,32 @@ export default function AdminEventsPage() {
     setTemplateId("");
   }
 
-  async function handleDeleteTemplate(id: string) {
-    if (!confirm("Diese Vorlage wirklich löschen?")) return;
-    await fetch(`/api/admin/templates/${id}`, { method: "DELETE" });
+  async function handleDeleteTemplate() {
+    if (!deletingTemplate) return;
+    await fetch(`/api/admin/templates/${deletingTemplate.id}`, { method: "DELETE" });
+    setDeletingTemplate(null);
+  }
+
+  const openEvents = events.filter((e) => e.status !== "finished");
+  const finishedEvents = events.filter((e) => e.status === "finished");
+
+  function EventCard({ event }: { event: RallyEvent }) {
+    return (
+      <li>
+        <Link
+          href={`/admin/events/${event.id}`}
+          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-slate-400"
+        >
+          <div>
+            <p className="font-semibold text-slate-900">{event.name}</p>
+            <p className="text-sm text-slate-500">Code: {event.joinCode}</p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+            {STATUS_LABEL[event.status]}
+          </span>
+        </Link>
+      </li>
+    );
   }
 
   return (
@@ -95,24 +128,11 @@ export default function AdminEventsPage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <ul className="flex flex-col gap-3">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/admin/events/${event.id}`}
-                className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-slate-400"
-              >
-                <div>
-                  <p className="font-semibold text-slate-900">{event.name}</p>
-                  <p className="text-sm text-slate-500">Code: {event.joinCode}</p>
-                </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                  {STATUS_LABEL[event.status]}
-                </span>
-              </Link>
-            </li>
+          {openEvents.map((event) => (
+            <EventCard key={event.id} event={event} />
           ))}
-          {events.length === 0 && (
-            <p className="text-center text-slate-500">Noch keine Events angelegt.</p>
+          {openEvents.length === 0 && (
+            <p className="text-center text-slate-500">Noch keine laufenden Events.</p>
           )}
         </ul>
 
@@ -125,9 +145,14 @@ export default function AdminEventsPage() {
                   key={t.id}
                   className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
                 >
-                  <span className="font-medium text-slate-800">{t.name}</span>
+                  <Link
+                    href={`/admin/templates/${t.id}/stations`}
+                    className="font-medium text-slate-800 hover:underline"
+                  >
+                    {t.name}
+                  </Link>
                   <button
-                    onClick={() => handleDeleteTemplate(t.id)}
+                    onClick={() => setDeletingTemplate(t)}
                     className="text-sm font-medium text-red-600 hover:text-red-800"
                   >
                     Löschen
@@ -137,7 +162,29 @@ export default function AdminEventsPage() {
             </ul>
           </section>
         )}
+
+        {finishedEvents.length > 0 && (
+          <section className="flex flex-col gap-3">
+            <h2 className="text-sm font-semibold text-slate-500">
+              Beendete Events ({finishedEvents.length})
+            </h2>
+            <ul className="flex flex-col gap-3">
+              {finishedEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
+
+      {deletingTemplate && (
+        <ConfirmDeleteByName
+          itemLabel="Vorlage"
+          itemName={deletingTemplate.name}
+          onConfirm={handleDeleteTemplate}
+          onClose={() => setDeletingTemplate(null)}
+        />
+      )}
     </>
   );
 }

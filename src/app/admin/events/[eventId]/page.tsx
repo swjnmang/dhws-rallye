@@ -32,6 +32,10 @@ export default function EventOverviewPage({
   }, [eventId]);
 
   useEffect(() => {
+    fetch("/api/admin/events/close-stale", { method: "POST" }).catch(() => {});
+  }, [eventId]);
+
+  useEffect(() => {
     if (!event) return;
     let cancelled = false;
     const url = `${window.location.origin}/join?code=${event.joinCode}`;
