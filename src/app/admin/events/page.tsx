@@ -312,37 +312,41 @@ export default function AdminEventsPage() {
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <details className="rounded-xl border border-slate-200 bg-white">
-          <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
-            Aktuell laufende Rallyes{openEvents.length > 0 && ` (${openEvents.length})`}
-          </summary>
-          <div className="border-t border-slate-200 p-4">
-            <ul className="flex flex-col gap-3">
-              {openEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-              {openEvents.length === 0 && (
-                <p className="text-center text-slate-500">Noch keine laufenden Rallyes.</p>
-              )}
-            </ul>
-          </div>
-        </details>
+        {mode !== "choice" && (
+          <>
+            <details className="rounded-xl border border-slate-200 bg-white">
+              <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
+                Aktuell laufende Rallyes{openEvents.length > 0 && ` (${openEvents.length})`}
+              </summary>
+              <div className="border-t border-slate-200 p-4">
+                <ul className="flex flex-col gap-3">
+                  {openEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                  {openEvents.length === 0 && (
+                    <p className="text-center text-slate-500">Noch keine laufenden Rallyes.</p>
+                  )}
+                </ul>
+              </div>
+            </details>
 
-        <details className="rounded-xl border border-slate-200 bg-white">
-          <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
-            Beendete Rallyes{finishedEvents.length > 0 && ` (${finishedEvents.length})`}
-          </summary>
-          <div className="border-t border-slate-200 p-4">
-            <ul className="flex flex-col gap-3">
-              {finishedEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
-              ))}
-              {finishedEvents.length === 0 && (
-                <p className="text-center text-slate-500">Noch keine beendeten Rallyes.</p>
-              )}
-            </ul>
-          </div>
-        </details>
+            <details className="rounded-xl border border-slate-200 bg-white">
+              <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
+                Beendete Rallyes{finishedEvents.length > 0 && ` (${finishedEvents.length})`}
+              </summary>
+              <div className="border-t border-slate-200 p-4">
+                <ul className="flex flex-col gap-3">
+                  {finishedEvents.map((event) => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
+                  {finishedEvents.length === 0 && (
+                    <p className="text-center text-slate-500">Noch keine beendeten Rallyes.</p>
+                  )}
+                </ul>
+              </div>
+            </details>
+          </>
+        )}
       </main>
 
       {deletingTemplate && (
