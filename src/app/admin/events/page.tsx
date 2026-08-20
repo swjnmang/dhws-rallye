@@ -89,6 +89,11 @@ export default function AdminEventsPage() {
       setError("Rallye konnte nicht erstellt werden");
       return;
     }
+    if (mode === "template") {
+      const data = await res.json();
+      router.push(`/admin/events/${data.event.id}`);
+      return;
+    }
     resetToClosed();
   }
 
