@@ -71,3 +71,34 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ floor });
 }
+
+// Persists a new drag-and-drop order for an event's/template's custom
+// floors. The 3 fixed base floors (public/floors/) always stay first;
+// custom floors are numbered right after them, in the given order.
+export async function PATCH(request: Request) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    if (e instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  const body = await request.json().catch(() => null);
+  const setId = typeof body?.setId === "string" ? body.setId : "";
+  const orderedFloorIds = Array.isArray(body?.orderedFloorIds) ? body.orderedFloorIds : null;
+
+  if (!setId || !orderedFloorIds || orderedFloorIds.some((id: unknown) => typeof id !== "string")) {
+    return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+  }
+
+  const db = adminDb();
+  const batch = db.batch();
+  orderedFloorIds.forEach((floorId: string, index: number) => {
+    batch.update(db.collection("floors").doc(floorId), { order: FLOORS.length + index });
+  });
+  await batch.commit();
+
+  return NextResponse.json({ ok: true });
+}

@@ -115,9 +115,11 @@ App läuft dann auf http://localhost:3000.
    Bild. Über **„+ Ebene hinzufügen"** lassen sich weitere Ebenen ergänzen –
    entweder mit eigenem Bild oder als **Google Maps (Live-GPS)**-Ebene für
    Bereiche im Freien (dort bekommt jede Station zusätzlich einen Radius in
-   Metern, ab dem Gruppen das Rätsel öffnen dürfen). Ebenen lassen sich über
-   sich selbst auch wieder löschen. Fertiges Event optional als **Vorlage
-   speichern**, damit andere Lehrkräfte darauf aufbauen können.
+   Metern, ab dem Gruppen das Rätsel öffnen dürfen). Neue Ebenen werden hinten
+   angehängt, lassen sich per Ziehen oder über die ‹/›-Pfeile neu anordnen
+   (die 3 festen Basis-Ebenen bleiben dabei immer vorne) und über sich selbst
+   auch wieder löschen. Fertiges Event optional als **Vorlage speichern**,
+   damit andere Lehrkräfte darauf aufbauen können.
 4. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder
    scannen den QR-Code / öffnen den Link von der Event-Seite), tragen
    Gruppennamen und Klasse ein und klicken auf **„Bereit"**. Sie landen in
