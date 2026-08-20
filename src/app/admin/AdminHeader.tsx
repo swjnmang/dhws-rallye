@@ -16,7 +16,7 @@ export default function AdminHeader({ title }: { title: string }) {
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
       <div className="flex items-center gap-4">
         <Link href="/admin/events" className="text-sm font-medium text-slate-500 hover:text-slate-900">
-          Events
+          Rallyes
         </Link>
         <h1 className="text-lg font-bold text-slate-900">{title}</h1>
       </div>

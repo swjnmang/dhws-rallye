@@ -18,6 +18,9 @@ export default function EventOverviewPage({
   const [groups, setGroups] = useState<Group[]>([]);
   const [joinInfo, setJoinInfo] = useState<{ url: string; qrDataUrl: string } | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   useEffect(() => {
     return onSnapshot(doc(db, "events", eventId), (snap) => {
@@ -57,10 +60,37 @@ export default function EventOverviewPage({
     setUpdating(false);
   }
 
+  function handleStartClick() {
+    setTemplateName(event?.name ?? "");
+    setShowTemplatePrompt(true);
+  }
+
+  async function handleSaveTemplateAndStart() {
+    if (!templateName.trim()) return;
+    setSavingTemplate(true);
+    const res = await fetch("/api/admin/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: templateName.trim(), sourceEventId: eventId }),
+    });
+    setSavingTemplate(false);
+    if (!res.ok) {
+      alert("Speichern als Vorlage fehlgeschlagen.");
+      return;
+    }
+    setShowTemplatePrompt(false);
+    await updateStatus("active");
+  }
+
+  async function handleStartWithoutSaving() {
+    setShowTemplatePrompt(false);
+    await updateStatus("active");
+  }
+
   if (!event) {
     return (
       <>
-        <AdminHeader title="Event" />
+        <AdminHeader title="Rallye" />
         <main className="p-6 text-slate-500">Lade…</main>
       </>
     );
@@ -80,7 +110,7 @@ export default function EventOverviewPage({
             </span>
             {event.status === "draft" && (
               <button
-                onClick={() => updateStatus("active")}
+                onClick={handleStartClick}
                 disabled={updating}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
               >
@@ -164,6 +194,50 @@ export default function EventOverviewPage({
           </Link>
         </section>
       </main>
+
+      {showTemplatePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="text-lg font-bold">Als Vorlage speichern?</h2>
+            <p className="text-sm text-slate-600">
+              Speichere diese Rallye als Vorlage, damit du sie später erneut nutzen kannst.
+            </p>
+            <input
+              autoFocus
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Name der Vorlage"
+              className="rounded-lg border border-slate-300 px-3 py-2"
+            />
+            <div className="mt-2 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleSaveTemplateAndStart}
+                disabled={savingTemplate || !templateName.trim()}
+                className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-40"
+              >
+                {savingTemplate ? "Speichert…" : "Als Vorlage speichern & starten"}
+              </button>
+              <button
+                type="button"
+                onClick={handleStartWithoutSaving}
+                disabled={savingTemplate}
+                className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 disabled:opacity-40"
+              >
+                Ohne Speichern starten
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTemplatePrompt(false)}
+                disabled={savingTemplate}
+                className="text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-40"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

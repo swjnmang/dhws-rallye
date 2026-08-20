@@ -23,7 +23,7 @@ export default function EventStationsPage({
     });
     setSavingTemplate(false);
     if (res.ok) {
-      alert("Vorlage gespeichert – sichtbar unter Events.");
+      alert("Vorlage gespeichert – sichtbar unter Rallyes.");
     } else {
       alert("Speichern als Vorlage fehlgeschlagen.");
     }
