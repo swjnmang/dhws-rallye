@@ -30,7 +30,7 @@ export type Hotspot = {
   puzzleId: string | null;
 };
 
-export type PuzzleType = "mc" | "text";
+export type PuzzleType = "mc" | "text" | "number";
 
 // Public shape - never contains the answer.
 export type Puzzle = {
@@ -45,6 +45,7 @@ export type Puzzle = {
 export type PuzzleAnswer = {
   correctOptionIndex: number | null;
   correctText: string | null;
+  correctNumber: number | null;
 };
 
 export type SolvedEntry = {

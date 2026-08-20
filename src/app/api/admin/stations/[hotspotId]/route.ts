@@ -51,6 +51,7 @@ export async function PATCH(request: Request, { params }: Params) {
     const answerUpdate: PuzzleAnswer = {
       correctOptionIndex: puzzleInput.correctOptionIndex,
       correctText: puzzleInput.correctText,
+      correctNumber: puzzleInput.correctNumber,
     };
     batch.update(adminDb().collection("puzzles").doc(puzzleId), puzzleUpdate);
     batch.set(adminDb().collection("puzzleAnswers").doc(puzzleId), answerUpdate);

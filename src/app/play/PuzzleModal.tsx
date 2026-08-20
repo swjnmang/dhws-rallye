@@ -15,6 +15,7 @@ export default function PuzzleModal({
   onClose: () => void;
 }) {
   const [textAnswer, setTextAnswer] = useState("");
+  const [numberAnswer, setNumberAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [wrongAttempt, setWrongAttempt] = useState(false);
 
@@ -26,6 +27,7 @@ export default function PuzzleModal({
     if (!correct) {
       setWrongAttempt(true);
       setTextAnswer("");
+      setNumberAnswer("");
     }
   }
 
@@ -68,6 +70,33 @@ export default function PuzzleModal({
             <button
               type="submit"
               disabled={submitting || !textAnswer.trim()}
+              className="rounded-xl bg-slate-900 px-4 py-3 text-lg font-semibold text-white disabled:opacity-50"
+            >
+              {submitting ? "Prüfe…" : "Antworten"}
+            </button>
+          </form>
+        )}
+
+        {puzzle.type === "number" && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (numberAnswer.trim()) submit(Number(numberAnswer));
+            }}
+            className="mt-6 flex flex-col gap-3"
+          >
+            <input
+              autoFocus
+              type="number"
+              inputMode="numeric"
+              value={numberAnswer}
+              onChange={(e) => setNumberAnswer(e.target.value)}
+              placeholder="Eure Zahl"
+              className="rounded-xl border border-slate-300 px-4 py-3 text-lg"
+            />
+            <button
+              type="submit"
+              disabled={submitting || !numberAnswer.trim()}
               className="rounded-xl bg-slate-900 px-4 py-3 text-lg font-semibold text-white disabled:opacity-50"
             >
               {submitting ? "Prüfe…" : "Antworten"}

@@ -33,6 +33,7 @@ export default function HotspotForm({
   );
   const [correctOptionIndex, setCorrectOptionIndex] = useState(0);
   const [correctText, setCorrectText] = useState("");
+  const [correctNumber, setCorrectNumber] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +56,8 @@ export default function HotspotForm({
             correctOptionIndex,
             points: 1,
           }
+        : type === "number"
+        ? { type, question, correctNumber: Number(correctNumber), points: 1 }
         : { type, question, correctText, points: 1 };
 
     const body = existing
@@ -131,6 +134,15 @@ export default function HotspotForm({
             >
               Texteingabe
             </button>
+            <button
+              type="button"
+              onClick={() => setType("number")}
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
+                type === "number" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+              }`}
+            >
+              Zahl
+            </button>
           </div>
         </div>
 
@@ -166,6 +178,18 @@ export default function HotspotForm({
                 />
               </div>
             ))}
+          </div>
+        ) : type === "number" ? (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Richtige Zahl</label>
+            <input
+              required
+              type="number"
+              inputMode="numeric"
+              value={correctNumber}
+              onChange={(e) => setCorrectNumber(e.target.value)}
+              className="rounded-lg border border-slate-300 px-3 py-2"
+            />
           </div>
         ) : (
           <div className="flex flex-col gap-1">

@@ -67,7 +67,7 @@ App läuft dann auf http://localhost:3000.
 1. Unter `/admin` mit dem Lehrkraft-Passwort anmelden.
 2. Unter **Stationen** (einmalig, gilt für alle Events): zwischen den drei
    Ebenen wechseln und direkt auf den Grundriss klicken, um eine nummerierte
-   Station mit Rätsel (Multiple-Choice oder Texteingabe) anzulegen.
+   Station mit Rätsel (Multiple-Choice, Texteingabe oder Zahl) anzulegen.
 3. Ein neues Event anlegen (z. B. „Klasse 5a") und auf der Event-Übersicht
    die Rallye **starten** – erst danach können Gruppen beitreten.
 4. Gruppen rufen auf ihrem Tablet `/join` auf, geben den Code ein (oder

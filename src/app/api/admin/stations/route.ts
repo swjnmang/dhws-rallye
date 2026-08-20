@@ -48,6 +48,7 @@ export async function POST(request: Request) {
   const answer: PuzzleAnswer = {
     correctOptionIndex: puzzleInput.correctOptionIndex,
     correctText: puzzleInput.correctText,
+    correctNumber: puzzleInput.correctNumber,
   };
 
   const batch = adminDb().batch();

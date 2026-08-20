@@ -50,6 +50,8 @@ export async function POST(request: Request) {
   let isCorrect = false;
   if (puzzle.type === "mc") {
     isCorrect = typeof answer === "number" && answer === correctAnswer.correctOptionIndex;
+  } else if (puzzle.type === "number") {
+    isCorrect = typeof answer === "number" && answer === correctAnswer.correctNumber;
   } else {
     isCorrect =
       typeof answer === "string" &&
