@@ -312,7 +312,7 @@ export default function AdminEventsPage() {
         )}
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        {mode !== "choice" && (
+        {mode === "closed" && (
           <>
             <details className="rounded-xl border border-slate-200 bg-white">
               <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
