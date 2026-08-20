@@ -17,6 +17,7 @@ export default function PlayPage() {
 
   const [event, setEvent] = useState<RallyEvent | null>(null);
   const [customFloors, setCustomFloors] = useState<CustomFloor[]>([]);
+  const [removedFloorIds, setRemovedFloorIds] = useState<Set<string>>(new Set());
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [group, setGroup] = useState<Group | null>(null);
@@ -68,6 +69,14 @@ export default function PlayPage() {
 
   useEffect(() => {
     if (!session) return;
+    const q = query(collection(db, "removedFloors"), where("setId", "==", session.eventId));
+    return onSnapshot(q, (snap) => {
+      setRemovedFloorIds(new Set(snap.docs.map((d) => d.data().floorId as string)));
+    });
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
     const q = query(collection(db, "hotspots"), where("setId", "==", session.eventId));
     return onSnapshot(q, (snap) => setHotspots(snap.docs.map((d) => d.data() as Hotspot)));
   }, [session]);
@@ -101,8 +110,11 @@ export default function PlayPage() {
   }, [group, event]);
 
   const allFloors = useMemo(
-    () => [...FLOORS, ...customFloors].sort((a, b) => a.order - b.order),
-    [customFloors]
+    () =>
+      [...FLOORS.filter((f) => !removedFloorIds.has(f.id)), ...customFloors].sort(
+        (a, b) => a.order - b.order
+      ),
+    [customFloors, removedFloorIds]
   );
 
   const totalPuzzles = Object.keys(puzzles).length;

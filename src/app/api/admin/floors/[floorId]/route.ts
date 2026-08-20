@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
+import { FLOORS } from "@/lib/floors";
 import type { CustomFloor, Puzzle } from "@/lib/types";
 
 type Params = { params: Promise<{ floorId: string }> };
@@ -33,7 +34,42 @@ export async function PATCH(request: Request, { params }: Params) {
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_request: Request, { params }: Params) {
+// The 3 fixed base floors aren't per-set Firestore docs, so "deleting" one
+// only makes sense for a specific event/template: it removes that set's
+// rooms/puzzles on the floor and records the floor as hidden for that setId
+// in `removedFloors`, without touching the floor for any other event.
+async function deleteBaseFloorForSet(floorId: string, setId: string) {
+  const db = adminDb();
+  const hotspotsSnap = await db
+    .collection("hotspots")
+    .where("floorId", "==", floorId)
+    .where("setId", "==", setId)
+    .get();
+  const puzzleIds = hotspotsSnap.docs
+    .map((d) => d.data().puzzleId as string | null)
+    .filter((id): id is string => !!id);
+  const puzzleSnaps = await Promise.all(
+    puzzleIds.map((id) => db.collection("puzzles").doc(id).get())
+  );
+
+  await Promise.all(
+    puzzleSnaps.map((snap) => {
+      const imageUrl = (snap.data() as Puzzle | undefined)?.imageUrl;
+      return imageUrl ? deleteBlobIfUnreferenced("puzzles", "imageUrl", imageUrl, snap.id) : Promise.resolve();
+    })
+  );
+
+  const batch = db.batch();
+  hotspotsSnap.docs.forEach((d) => batch.delete(d.ref));
+  puzzleIds.forEach((id) => {
+    batch.delete(db.collection("puzzles").doc(id));
+    batch.delete(db.collection("puzzleAnswers").doc(id));
+  });
+  batch.set(db.collection("removedFloors").doc(`${setId}_${floorId}`), { setId, floorId });
+  await batch.commit();
+}
+
+export async function DELETE(request: Request, { params }: Params) {
   try {
     await requireAdmin();
   } catch (e) {
@@ -44,6 +80,17 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
 
   const { floorId } = await params;
+
+  if (FLOORS.some((f) => f.id === floorId)) {
+    const body = await request.json().catch(() => null);
+    const setId = typeof body?.setId === "string" ? body.setId : "";
+    if (!setId) {
+      return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+    }
+    await deleteBaseFloorForSet(floorId, setId);
+    return NextResponse.json({ ok: true });
+  }
+
   const db = adminDb();
   const floorRef = db.collection("floors").doc(floorId);
   const floorSnap = await floorRef.get();

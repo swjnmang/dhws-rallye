@@ -25,6 +25,13 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Marks a fixed base floor (Erdgeschoss/1.OG/2.OG) as hidden for one
+    // event/template, since those floors aren't per-set docs themselves.
+    match /removedFloors/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Never readable by clients: this is where correct answers live.
     match /puzzleAnswers/{puzzleId} {
       allow read, write: if false;

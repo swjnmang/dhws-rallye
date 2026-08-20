@@ -20,6 +20,7 @@ export default function StationsEditor({
   extraHeaderActions?: React.ReactNode;
 }) {
   const [customFloors, setCustomFloors] = useState<CustomFloor[]>([]);
+  const [removedFloorIds, setRemovedFloorIds] = useState<Set<string>>(new Set());
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [selectedFloorId, setSelectedFloorId] = useState(FLOORS[0].id);
@@ -31,6 +32,16 @@ export default function StationsEditor({
   useEffect(() => {
     const q = query(collection(db, "floors"), where("setId", "==", setId));
     return onSnapshot(q, (snap) => setCustomFloors(snap.docs.map((d) => d.data() as CustomFloor)));
+  }, [setId]);
+
+  // Fixed base floors can be removed per event/template (they aren't per-set
+  // docs themselves, so this just records which ones to hide - see the
+  // "removedFloors" collection written by DELETE /api/admin/floors/[floorId]).
+  useEffect(() => {
+    const q = query(collection(db, "removedFloors"), where("setId", "==", setId));
+    return onSnapshot(q, (snap) => {
+      setRemovedFloorIds(new Set(snap.docs.map((d) => d.data().floorId as string)));
+    });
   }, [setId]);
 
   useEffect(() => {
@@ -51,8 +62,11 @@ export default function StationsEditor({
   }, [setId]);
 
   const allFloors = useMemo(
-    () => [...FLOORS, ...customFloors].sort((a, b) => a.order - b.order),
-    [customFloors]
+    () =>
+      [...FLOORS.filter((f) => !removedFloorIds.has(f.id)), ...customFloors].sort(
+        (a, b) => a.order - b.order
+      ),
+    [customFloors, removedFloorIds]
   );
   const sortedCustomFloors = useMemo(
     () => [...customFloors].sort((a, b) => a.order - b.order),
@@ -81,15 +95,19 @@ export default function StationsEditor({
   }
 
   async function handleDeleteFloor() {
-    if (!currentCustomFloor) return;
+    if (!currentFloor) return;
     if (
       !confirm(
-        `Ebene "${currentCustomFloor.name}" wirklich löschen? Alle Räume/Rätsel darauf werden mitgelöscht.`
+        `Ebene "${currentFloor.name}" wirklich löschen? Alle Räume/Rätsel darauf werden mitgelöscht.`
       )
     )
       return;
-    await fetch(`/api/admin/floors/${currentCustomFloor.id}`, { method: "DELETE" });
-    setSelectedFloorId(FLOORS[0].id);
+    await fetch(`/api/admin/floors/${currentFloor.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ setId }),
+    });
+    if (currentCustomFloor) setSelectedFloorId(FLOORS[0].id);
   }
 
   async function persistFloorOrder(floorId: string, order: number) {
@@ -215,14 +233,12 @@ export default function StationsEditor({
 
         {currentFloor && (
           <section className="flex flex-col gap-3">
-            {currentCustomFloor && (
-              <button
-                onClick={handleDeleteFloor}
-                className="w-fit text-sm font-medium text-red-600 hover:text-red-800"
-              >
-                Diese Ebene löschen
-              </button>
-            )}
+            <button
+              onClick={handleDeleteFloor}
+              className="w-fit text-sm font-medium text-red-600 hover:text-red-800"
+            >
+              Diese Ebene löschen
+            </button>
 
             {currentFloor.kind === "map" ? (
               <StationsMapView

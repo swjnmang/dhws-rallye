@@ -7,11 +7,27 @@ import type { CustomFloor, Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 // both for "create event from template" and "save event as template".
 export async function cloneStations(fromSetId: string, toSetId: string): Promise<void> {
   const db = adminDb();
-  const [floorsSnap, hotspotsSnap, puzzlesSnap] = await Promise.all([
+  const [floorsSnap, hotspotsSnap, puzzlesSnap, removedFloorsSnap] = await Promise.all([
     db.collection("floors").where("setId", "==", fromSetId).get(),
     db.collection("hotspots").where("setId", "==", fromSetId).get(),
     db.collection("puzzles").where("setId", "==", fromSetId).get(),
+    db.collection("removedFloors").where("setId", "==", fromSetId).get(),
   ]);
+
+  // Carry over which fixed base floors were removed for the source set, so
+  // a floor hidden in a template stays hidden in events created from it (and
+  // vice versa when saving an event as a template).
+  if (!removedFloorsSnap.empty) {
+    const removedBatch = db.batch();
+    removedFloorsSnap.docs.forEach((d) => {
+      const floorId = d.data().floorId as string;
+      removedBatch.set(db.collection("removedFloors").doc(`${toSetId}_${floorId}`), {
+        setId: toSetId,
+        floorId,
+      });
+    });
+    await removedBatch.commit();
+  }
 
   // Custom floors get new ids, so hotspots placed on them need remapping.
   // Hotspots on one of the 3 fixed base floors (id "eg"/"og1"/"og2") are left

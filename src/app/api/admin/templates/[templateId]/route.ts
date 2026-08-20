@@ -19,10 +19,11 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { templateId } = await params;
   const db = adminDb();
 
-  const [hotspotsSnap, puzzlesSnap, floorsSnap] = await Promise.all([
+  const [hotspotsSnap, puzzlesSnap, floorsSnap, removedFloorsSnap] = await Promise.all([
     db.collection("hotspots").where("setId", "==", templateId).get(),
     db.collection("puzzles").where("setId", "==", templateId).get(),
     db.collection("floors").where("setId", "==", templateId).get(),
+    db.collection("removedFloors").where("setId", "==", templateId).get(),
   ]);
 
   await Promise.all([
@@ -43,6 +44,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     batch.delete(db.collection("puzzleAnswers").doc(d.id));
   });
   floorsSnap.docs.forEach((d) => batch.delete(d.ref));
+  removedFloorsSnap.docs.forEach((d) => batch.delete(d.ref));
   batch.delete(db.collection("templates").doc(templateId));
   await batch.commit();
 
