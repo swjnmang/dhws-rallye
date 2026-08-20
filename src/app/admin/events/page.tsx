@@ -47,7 +47,10 @@ export default function AdminEventsPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError("Bitte einen Namen für das Event eingeben.");
+      return;
+    }
     setCreating(true);
     setError(null);
     const res = await fetch("/api/admin/events", {
@@ -99,9 +102,14 @@ export default function AdminEventsPage() {
         <form onSubmit={handleCreate} className="flex flex-col gap-3">
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+              if (error) setError(null);
+            }}
             placeholder="Neues Event, z. B. Klasse 5a"
-            className="rounded-lg border border-slate-300 px-4 py-2"
+            className={`rounded-lg border px-4 py-2 ${
+              error ? "border-red-400" : "border-slate-300"
+            }`}
           />
           <div className="flex gap-3">
             <select
