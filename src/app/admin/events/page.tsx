@@ -145,18 +145,21 @@ export default function AdminEventsPage() {
                   key={t.id}
                   className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
                 >
-                  <Link
-                    href={`/admin/templates/${t.id}/stations`}
-                    className="font-medium text-slate-800 hover:underline"
-                  >
-                    {t.name}
-                  </Link>
-                  <button
-                    onClick={() => setDeletingTemplate(t)}
-                    className="text-sm font-medium text-red-600 hover:text-red-800"
-                  >
-                    Löschen
-                  </button>
+                  <span className="font-medium text-slate-800">{t.name}</span>
+                  <div className="flex items-center gap-4">
+                    <Link
+                      href={`/admin/templates/${t.id}/stations`}
+                      className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+                    >
+                      Bearbeiten
+                    </Link>
+                    <button
+                      onClick={() => setDeletingTemplate(t)}
+                      className="text-sm font-medium text-red-600 hover:text-red-800"
+                    >
+                      Löschen
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
