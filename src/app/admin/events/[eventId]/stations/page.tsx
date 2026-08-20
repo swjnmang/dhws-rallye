@@ -1,28 +1,34 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { use, useEffect, useState } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { FLOORS } from "@/lib/floors";
-import AdminHeader from "../AdminHeader";
+import AdminHeader from "../../../AdminHeader";
 import HotspotForm from "./HotspotForm";
 import type { Hotspot, Puzzle } from "@/lib/types";
 
-export default function StationsPage() {
+export default function EventStationsPage({
+  params,
+}: {
+  params: Promise<{ eventId: string }>;
+}) {
+  const { eventId } = use(params);
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [selectedFloorId, setSelectedFloorId] = useState(FLOORS[0].id);
   const [pendingPosition, setPendingPosition] = useState<{ x: number; y: number } | null>(null);
   const [editingHotspotId, setEditingHotspotId] = useState<string | null>(null);
+  const [savingTemplate, setSavingTemplate] = useState(false);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "hotspots"), (snap) => {
-      setHotspots(snap.docs.map((d) => d.data() as Hotspot));
-    });
-  }, []);
+    const q = query(collection(db, "hotspots"), where("setId", "==", eventId));
+    return onSnapshot(q, (snap) => setHotspots(snap.docs.map((d) => d.data() as Hotspot)));
+  }, [eventId]);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "puzzles"), (snap) => {
+    const q = query(collection(db, "puzzles"), where("setId", "==", eventId));
+    return onSnapshot(q, (snap) => {
       const map: Record<string, Puzzle> = {};
       snap.docs.forEach((d) => {
         const puzzle = d.data() as Puzzle;
@@ -30,7 +36,7 @@ export default function StationsPage() {
       });
       setPuzzles(map);
     });
-  }, []);
+  }, [eventId]);
 
   const currentFloor = FLOORS.find((f) => f.id === selectedFloorId)!;
   const floorHotspots = hotspots
@@ -47,15 +53,40 @@ export default function StationsPage() {
     setPendingPosition({ x: xPct, y: yPct });
   }
 
+  async function handleSaveAsTemplate() {
+    const name = prompt("Name der Vorlage:");
+    if (!name || !name.trim()) return;
+    setSavingTemplate(true);
+    const res = await fetch("/api/admin/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: name.trim(), sourceEventId: eventId }),
+    });
+    setSavingTemplate(false);
+    if (res.ok) {
+      alert("Vorlage gespeichert – sichtbar unter Events.");
+    } else {
+      alert("Speichern als Vorlage fehlgeschlagen.");
+    }
+  }
+
   return (
     <>
-      <AdminHeader title="Stationen & Rätsel" />
+      <AdminHeader title="Rätsel einrichten" />
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 py-10">
-        <p className="text-sm text-slate-600">
-          Diese Stationen gelten für alle Events (Spiel-Durchläufe) gemeinsam. Klickt auf den
-          Grundriss, um eine neue nummerierte Station anzulegen. Bestehende Marker anklicken, um
-          sie zu bearbeiten.
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-600">
+            Klickt auf den Grundriss, um eine neue nummerierte Station anzulegen. Bestehende
+            Marker anklicken, um sie zu bearbeiten.
+          </p>
+          <button
+            onClick={handleSaveAsTemplate}
+            disabled={savingTemplate || hotspots.length === 0}
+            className="shrink-0 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500 disabled:opacity-50"
+          >
+            {savingTemplate ? "Speichert…" : "Als Vorlage speichern"}
+          </button>
+        </div>
 
         <nav className="flex gap-2">
           {FLOORS.map((floor) => (
@@ -114,6 +145,7 @@ export default function StationsPage() {
 
       {pendingPosition && (
         <HotspotForm
+          setId={eventId}
           floorId={currentFloor.id}
           xPct={pendingPosition.x}
           yPct={pendingPosition.y}
@@ -126,6 +158,7 @@ export default function StationsPage() {
 
       {editingHotspot && (
         <HotspotForm
+          setId={eventId}
           floorId={editingHotspot.floorId}
           xPct={editingHotspot.xPct}
           yPct={editingHotspot.yPct}

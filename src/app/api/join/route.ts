@@ -25,21 +25,16 @@ export async function POST(request: Request) {
   const eventDoc = querySnap.docs[0];
   const event = eventDoc.data() as RallyEvent;
 
-  if (event.status === "draft") {
-    return NextResponse.json({ error: "Die Rallye hat noch nicht begonnen" }, { status: 409 });
-  }
   if (event.status === "finished") {
     return NextResponse.json({ error: "Die Rallye ist bereits beendet" }, { status: 409 });
   }
 
   const groupId = generateId();
-  const now = Date.now();
   const group: Group = {
     id: groupId,
     name: groupName,
     className,
-    joinedAt: now,
-    startedAt: now,
+    joinedAt: Date.now(),
     finishedAt: null,
     solved: {},
     progress: {},

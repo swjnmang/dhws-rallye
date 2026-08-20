@@ -19,6 +19,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const { eventId } = await params;
   const body = await request.json().catch(() => null);
+  const eventRef = adminDb().collection("events").doc(eventId);
 
   const update: Record<string, unknown> = {};
   if (typeof body?.name === "string" && body.name.trim()) {
@@ -26,13 +27,23 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status)) {
     update.status = body.status;
+
+    // The whole class starts the race together: stamp a shared start time
+    // the first time the event moves into "active", never again after that
+    // (so reopening a finished event doesn't reset everyone's clock).
+    if (body.status === "active") {
+      const snap = await eventRef.get();
+      if (!snap.data()?.startedAt) {
+        update.startedAt = Date.now();
+      }
+    }
   }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "Nichts zu aktualisieren" }, { status: 400 });
   }
 
-  await adminDb().collection("events").doc(eventId).update(update);
+  await eventRef.update(update);
   return NextResponse.json({ ok: true });
 }
 
@@ -47,11 +58,24 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
 
   const { eventId } = await params;
-  const eventRef = adminDb().collection("events").doc(eventId);
+  const db = adminDb();
+  const eventRef = db.collection("events").doc(eventId);
 
-  const groupsSnap = await eventRef.collection("groups").get();
-  await Promise.all(groupsSnap.docs.map((d) => d.ref.delete()));
-  await eventRef.delete();
+  const [groupsSnap, hotspotsSnap, puzzlesSnap] = await Promise.all([
+    eventRef.collection("groups").get(),
+    db.collection("hotspots").where("setId", "==", eventId).get(),
+    db.collection("puzzles").where("setId", "==", eventId).get(),
+  ]);
+
+  const batch = db.batch();
+  groupsSnap.docs.forEach((d) => batch.delete(d.ref));
+  hotspotsSnap.docs.forEach((d) => batch.delete(d.ref));
+  puzzlesSnap.docs.forEach((d) => {
+    batch.delete(d.ref);
+    batch.delete(db.collection("puzzleAnswers").doc(d.id));
+  });
+  batch.delete(eventRef);
+  await batch.commit();
 
   return NextResponse.json({ ok: true });
 }

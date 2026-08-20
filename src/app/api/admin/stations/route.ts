@@ -5,8 +5,8 @@ import { generateId } from "@/lib/codes";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
 import type { Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 
-// Hotspots/puzzles are global: the building layout and its puzzles are a
-// fixed structure shared by every event (game session), not per-event data.
+// Hotspots/puzzles live in shared top-level collections, scoped by `setId`
+// (an eventId or a templateId) rather than nested under separate parents.
 export async function POST(request: Request) {
   try {
     await requireAdmin();
@@ -19,26 +19,37 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
 
+  const setId = typeof body?.setId === "string" ? body.setId : "";
   const floorId = typeof body?.floorId === "string" ? body.floorId : "";
   const roomName = typeof body?.roomName === "string" ? body.roomName.trim() : "";
   const xPct = typeof body?.xPct === "number" ? body.xPct : null;
   const yPct = typeof body?.yPct === "number" ? body.yPct : null;
   const puzzleInput = validatePuzzleInput(body?.puzzle);
 
-  if (!floorId || !roomName || xPct === null || yPct === null || !puzzleInput) {
+  if (!setId || !floorId || !roomName || xPct === null || yPct === null || !puzzleInput) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
 
   const hotspotsRef = adminDb().collection("hotspots");
-  const countSnap = await hotspotsRef.count().get();
+  const countSnap = await hotspotsRef.where("setId", "==", setId).count().get();
   const number = countSnap.data().count + 1;
 
   const hotspotId = generateId();
   const puzzleId = generateId();
 
-  const hotspot: Hotspot = { id: hotspotId, number, floorId, roomName, xPct, yPct, puzzleId };
+  const hotspot: Hotspot = {
+    id: hotspotId,
+    setId,
+    number,
+    floorId,
+    roomName,
+    xPct,
+    yPct,
+    puzzleId,
+  };
   const puzzle: Puzzle = {
     id: puzzleId,
+    setId,
     hotspotId,
     type: puzzleInput.type,
     question: puzzleInput.question,

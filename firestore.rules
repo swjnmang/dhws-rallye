@@ -6,7 +6,9 @@ service cloud.firestore {
     // the Firebase Admin SDK, which bypasses these rules entirely. Clients
     // therefore never get direct write access to anything.
 
-    // Global, shared by every event: the building layout and its puzzles.
+    // Hotspots/puzzles carry a `setId` (an eventId or templateId) so one
+    // event's or template's stations don't leak into another's - but the
+    // read rule itself is the same open rule for all of them.
     match /hotspots/{hotspotId} {
       allow read: if true;
       allow write: if false;
@@ -20,6 +22,11 @@ service cloud.firestore {
     // Never readable by clients: this is where correct answers live.
     match /puzzleAnswers/{puzzleId} {
       allow read, write: if false;
+    }
+
+    match /templates/{templateId} {
+      allow read: if true;
+      allow write: if false;
     }
 
     match /events/{eventId} {

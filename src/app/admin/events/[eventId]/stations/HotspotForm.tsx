@@ -9,6 +9,7 @@ type ExistingData = {
 };
 
 export default function HotspotForm({
+  setId,
   floorId,
   xPct,
   yPct,
@@ -17,6 +18,7 @@ export default function HotspotForm({
   onSaved,
   onDeleted,
 }: {
+  setId: string;
   floorId: string;
   xPct: number;
   yPct: number;
@@ -62,7 +64,7 @@ export default function HotspotForm({
 
     const body = existing
       ? { roomName, xPct, yPct, puzzle: puzzlePayload }
-      : { floorId, roomName, xPct, yPct, puzzle: puzzlePayload };
+      : { setId, floorId, roomName, xPct, yPct, puzzle: puzzlePayload };
 
     const url = existing
       ? `/api/admin/stations/${existing.hotspot.id}`

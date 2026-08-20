@@ -1,8 +1,7 @@
 export type EventStatus = "draft" | "active" | "finished";
 
-// A floor's image is a compressed data URL, stored as its own Firestore
-// document (subcollection) so each floor stays under the 1 MiB doc limit
-// independently of the others and of the parent event document.
+// A floor's image is a static file (public/floors/) - the building itself
+// never changes, so this is a fixed constant, not Firestore data.
 export type Floor = {
   id: string;
   name: string;
@@ -16,12 +15,30 @@ export type RallyEvent = {
   status: EventStatus;
   joinCode: string;
   createdAt: number;
+  // Set once, when the teacher clicks "Rallye starten" (draft -> active).
+  // Every group's timer is measured from this shared moment, not from when
+  // they individually joined, so the whole class starts the race together.
+  startedAt: number | null;
+  // Which template (if any) this event's stations were cloned from. Purely
+  // informational - editing the event afterwards does not affect the template.
+  templateId: string | null;
 };
 
-// Hotspots/puzzles are global (not per-event): the building layout and its
-// puzzles are a fixed structure shared by every game session ("event").
+// A reusable, named set of stations a teacher has saved from a finished
+// event so other teachers can start new events from it.
+export type Template = {
+  id: string;
+  name: string;
+  createdAt: number;
+};
+
+// Hotspots/puzzles/answers all carry a `setId`, which is either an eventId
+// or a templateId. This keeps every event's (and template's) stations in
+// one shared top-level collection, filtered by `setId`, instead of nesting
+// them under separate parents.
 export type Hotspot = {
   id: string;
+  setId: string;
   number: number;
   floorId: string;
   roomName: string;
@@ -35,6 +52,7 @@ export type PuzzleType = "mc" | "text" | "number";
 // Public shape - never contains the answer.
 export type Puzzle = {
   id: string;
+  setId: string;
   hotspotId: string;
   type: PuzzleType;
   question: string;
@@ -58,7 +76,6 @@ export type Group = {
   name: string;
   className: string;
   joinedAt: number;
-  startedAt: number;
   finishedAt: number | null;
   solved: Record<string, SolvedEntry>;
   progress: Record<string, { attempts: number }>;

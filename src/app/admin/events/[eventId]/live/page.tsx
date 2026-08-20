@@ -1,11 +1,11 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { formatDuration } from "@/lib/format";
 import AdminHeader from "../../../AdminHeader";
-import type { Group } from "@/lib/types";
+import type { Group, RallyEvent } from "@/lib/types";
 
 export default function LivePage({
   params,
@@ -13,11 +13,18 @@ export default function LivePage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = use(params);
+  const [event, setEvent] = useState<RallyEvent | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [puzzleCount, setPuzzleCount] = useState(0);
   // Date.now() seeds the ticking clock; the interval below keeps it live.
   // eslint-disable-next-line react-hooks/purity
   const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    return onSnapshot(doc(db, "events", eventId), (snap) => {
+      setEvent(snap.exists() ? (snap.data() as RallyEvent) : null);
+    });
+  }, [eventId]);
 
   useEffect(() => {
     return onSnapshot(collection(db, "events", eventId, "groups"), (snap) => {
@@ -26,10 +33,9 @@ export default function LivePage({
   }, [eventId]);
 
   useEffect(() => {
-    return onSnapshot(collection(db, "puzzles"), (snap) => {
-      setPuzzleCount(snap.docs.length);
-    });
-  }, []);
+    const q = query(collection(db, "puzzles"), where("setId", "==", eventId));
+    return onSnapshot(q, (snap) => setPuzzleCount(snap.docs.length));
+  }, [eventId]);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -46,7 +52,7 @@ export default function LivePage({
       const aSolved = Object.keys(a.solved).length;
       const bSolved = Object.keys(b.solved).length;
       if (aSolved !== bSolved) return bSolved - aSolved;
-      return a.startedAt - b.startedAt;
+      return a.joinedAt - b.joinedAt;
     });
   }, [groups]);
 
@@ -62,7 +68,9 @@ export default function LivePage({
             const solvedCount = Object.keys(group.solved).length;
             const elapsed = group.finishedAt
               ? group.totalSeconds ?? 0
-              : (now - group.startedAt) / 1000;
+              : event?.startedAt
+              ? (now - event.startedAt) / 1000
+              : 0;
             return (
               <div
                 key={group.id}

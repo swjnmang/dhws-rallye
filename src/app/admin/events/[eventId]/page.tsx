@@ -2,11 +2,11 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot } from "firebase/firestore";
 import QRCode from "qrcode";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "../../AdminHeader";
-import type { RallyEvent, EventStatus } from "@/lib/types";
+import type { RallyEvent, EventStatus, Group } from "@/lib/types";
 
 export default function EventOverviewPage({
   params,
@@ -15,12 +15,19 @@ export default function EventOverviewPage({
 }) {
   const { eventId } = use(params);
   const [event, setEvent] = useState<RallyEvent | null>(null);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [joinInfo, setJoinInfo] = useState<{ url: string; qrDataUrl: string } | null>(null);
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     return onSnapshot(doc(db, "events", eventId), (snap) => {
       setEvent(snap.exists() ? (snap.data() as RallyEvent) : null);
+    });
+  }, [eventId]);
+
+  useEffect(() => {
+    return onSnapshot(collection(db, "events", eventId, "groups"), (snap) => {
+      setGroups(snap.docs.map((d) => d.data() as Group));
     });
   }, [eventId]);
 
@@ -63,7 +70,7 @@ export default function EventOverviewPage({
           <p className="text-sm font-medium text-slate-500">Status</p>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-800">
-              {event.status === "draft" && "In Vorbereitung"}
+              {event.status === "draft" && "Lobby – In Vorbereitung"}
               {event.status === "active" && "Läuft"}
               {event.status === "finished" && "Beendet"}
             </span>
@@ -107,7 +114,38 @@ export default function EventOverviewPage({
           <p className="break-all text-sm text-slate-500">{joinInfo?.url}</p>
         </section>
 
-        <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {event.status === "draft" && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">
+              Lobby ({groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"} bereit)
+            </p>
+            {groups.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-400">
+                Noch keine Gruppe beigetreten. Code oder QR-Code teilen, dann hier abwarten.
+              </p>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-2">
+                {groups.map((group) => (
+                  <li
+                    key={group.id}
+                    className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-2 text-sm"
+                  >
+                    <span className="font-medium text-slate-800">{group.name}</span>
+                    <span className="text-slate-500">Klasse {group.className}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        <section className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <Link
+            href={`/admin/events/${eventId}/stations`}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
+          >
+            Rätsel einrichten
+          </Link>
           <Link
             href={`/admin/events/${eventId}/live`}
             className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"

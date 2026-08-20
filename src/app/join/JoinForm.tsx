@@ -96,7 +96,7 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
         disabled={loading}
         className="rounded-xl bg-slate-900 px-6 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
       >
-        {loading ? "Beitreten…" : "Los geht's"}
+        {loading ? "Beitreten…" : "Bereit"}
       </button>
     </form>
   );

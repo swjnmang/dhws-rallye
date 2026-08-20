@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { getGroupSession, clearGroupSession, type GroupSession } from "@/lib/session";
 import { formatDuration } from "@/lib/format";
@@ -56,14 +56,15 @@ export default function PlayPage() {
   }, [session, router]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "hotspots"), (snap) =>
-      setHotspots(snap.docs.map((d) => d.data() as Hotspot))
-    );
-    return unsub;
-  }, []);
+    if (!session) return;
+    const q = query(collection(db, "hotspots"), where("setId", "==", session.eventId));
+    return onSnapshot(q, (snap) => setHotspots(snap.docs.map((d) => d.data() as Hotspot)));
+  }, [session]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "puzzles"), (snap) => {
+    if (!session) return;
+    const q = query(collection(db, "puzzles"), where("setId", "==", session.eventId));
+    return onSnapshot(q, (snap) => {
       const map: Record<string, Puzzle> = {};
       snap.docs.forEach((d) => {
         const puzzle = d.data() as Puzzle;
@@ -71,8 +72,7 @@ export default function PlayPage() {
       });
       setPuzzles(map);
     });
-    return unsub;
-  }, []);
+  }, [session]);
 
   useEffect(() => {
     if (!session) return;
@@ -84,16 +84,15 @@ export default function PlayPage() {
   }, [session]);
 
   useEffect(() => {
-    if (!group || group.finishedAt) return;
+    if (!group || group.finishedAt || !event?.startedAt) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [group]);
+  }, [group, event]);
 
   const totalPuzzles = Object.keys(puzzles).length;
   const solvedCount = group ? Object.keys(group.solved).length : 0;
-  const elapsedSeconds = group
-    ? ((group.finishedAt ?? now) - group.startedAt) / 1000
-    : 0;
+  const elapsedSeconds =
+    group && event?.startedAt ? ((group.finishedAt ?? now) - event.startedAt) / 1000 : 0;
 
   const floorHotspots = useMemo(
     () => hotspots.filter((h) => h.floorId === selectedFloorId),
@@ -124,6 +123,20 @@ export default function PlayPage() {
     return (
       <main className="flex flex-1 items-center justify-center">
         <p className="text-slate-500">Lade Rallye…</p>
+      </main>
+    );
+  }
+
+  if (event.status === "draft") {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+        <h1 className="text-3xl font-bold">Ihr seid bereit, {session.groupName}! ⏳</h1>
+        <p className="text-slate-600">
+          Klasse {session.className} · wartet auf den Start durch die Lehrkraft …
+        </p>
+        <p className="text-sm text-slate-400">
+          Diese Seite aktualisiert sich automatisch, sobald es losgeht.
+        </p>
       </main>
     );
   }

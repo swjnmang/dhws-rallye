@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
-import type { Group, Puzzle, PuzzleAnswer } from "@/lib/types";
+import type { Group, Puzzle, PuzzleAnswer, RallyEvent } from "@/lib/types";
 
 function normalizeText(value: string): string {
   return value
@@ -26,19 +26,21 @@ export async function POST(request: Request) {
   const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
   const answerRef = adminDb().collection("puzzleAnswers").doc(puzzleId);
 
-  const [groupSnap, puzzleSnap, answerSnap] = await Promise.all([
+  const [groupSnap, puzzleSnap, answerSnap, eventSnap] = await Promise.all([
     groupRef.get(),
     puzzleRef.get(),
     answerRef.get(),
+    eventRef.get(),
   ]);
 
-  if (!groupSnap.exists || !puzzleSnap.exists || !answerSnap.exists) {
+  if (!groupSnap.exists || !puzzleSnap.exists || !answerSnap.exists || !eventSnap.exists) {
     return NextResponse.json({ error: "Nicht gefunden" }, { status: 404 });
   }
 
   const group = groupSnap.data() as Group;
   const puzzle = puzzleSnap.data() as Puzzle;
   const correctAnswer = answerSnap.data() as PuzzleAnswer;
+  const event = eventSnap.data() as RallyEvent;
 
   if (group.finishedAt) {
     return NextResponse.json({ correct: true, allSolved: true });
@@ -72,14 +74,18 @@ export async function POST(request: Request) {
   if (isCorrect) {
     update[`solved.${puzzleId}`] = { solvedAt: now, attempts };
 
-    const puzzlesCountSnap = await adminDb().collection("puzzles").count().get();
+    const puzzlesCountSnap = await adminDb()
+      .collection("puzzles")
+      .where("setId", "==", eventId)
+      .count()
+      .get();
     const totalPuzzles = puzzlesCountSnap.data().count;
     const solvedCount = Object.keys(group.solved).length + 1;
 
     if (solvedCount >= totalPuzzles) {
       allSolved = true;
       update.finishedAt = now;
-      update.totalSeconds = Math.round((now - group.startedAt) / 1000);
+      update.totalSeconds = Math.round((now - (event.startedAt ?? now)) / 1000);
     }
   }
 

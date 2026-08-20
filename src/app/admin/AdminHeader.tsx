@@ -18,9 +18,6 @@ export default function AdminHeader({ title }: { title: string }) {
         <Link href="/admin/events" className="text-sm font-medium text-slate-500 hover:text-slate-900">
           Events
         </Link>
-        <Link href="/admin/stations" className="text-sm font-medium text-slate-500 hover:text-slate-900">
-          Stationen
-        </Link>
         <h1 className="text-lg font-bold text-slate-900">{title}</h1>
       </div>
       <button
