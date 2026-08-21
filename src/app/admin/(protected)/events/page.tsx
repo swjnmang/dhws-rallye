@@ -191,6 +191,12 @@ export default function AdminEventsPage() {
             >
               Highscore
             </Link>
+            <Link
+              href="/admin/organization"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+            >
+              Organisation erstellen / verwalten
+            </Link>
           </div>
         )}
 

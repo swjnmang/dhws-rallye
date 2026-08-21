@@ -31,8 +31,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Konto existiert bereits" }, { status: 409 });
   }
 
-  // No org yet - the user picks "create new" or "join existing" on
-  // /admin/choose-org after verifying their email.
+  // No org yet - optional, picked later from /admin/organization
+  // ("Organisation erstellen / verwalten" on the rallies page).
   const user: AppUser = {
     uid,
     email,

@@ -3,9 +3,8 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import type { Organization } from "@/lib/types";
 
-// Backs the header's "which org am I in" display and the owner-only
-// "Mitglieder" link - resolved server-side since organizations isn't
-// client-readable.
+// Backs the header's "which org am I in" display and the
+// /admin/organization page's state (none / pending / owner / member).
 export async function GET() {
   let admin;
   try {
@@ -17,13 +16,18 @@ export async function GET() {
     throw e;
   }
 
-  const orgDoc = await adminDb().collection("organizations").doc(admin.orgId).get();
-  const org = orgDoc.data() as Organization | undefined;
+  let orgName: string | null = null;
+  if (admin.orgId) {
+    const orgDoc = await adminDb().collection("organizations").doc(admin.orgId).get();
+    const org = orgDoc.data() as Organization | undefined;
+    orgName = org?.name ?? admin.orgId;
+  }
 
   return NextResponse.json({
     orgId: admin.orgId,
-    orgName: org?.name ?? admin.orgId,
+    orgName,
     orgRole: admin.orgRole,
+    membershipStatus: admin.membershipStatus,
     isSuperAdmin: admin.isSuperAdmin,
   });
 }

@@ -12,15 +12,12 @@ export class AdminAuthError extends Error {
   }
 }
 
-// Thrown when the Firebase session itself is valid but the account isn't
-// allowed to use the admin area yet (no active org membership). Extends
-// AdminAuthError so every existing `catch (e) { if (e instanceof
+// Extends AdminAuthError so every existing `catch (e) { if (e instanceof
 // AdminAuthError) return 401 }` in the API routes keeps rejecting this case
-// too without needing to change - only the login-gating layout needs the
-// finer distinction (to redirect to /admin/choose-org or /admin/pending
-// instead of /admin/login).
+// too without needing to change. Only used for the super-admin check now -
+// org membership itself is no longer a gate on using the app.
 export class AdminMembershipError extends AdminAuthError {
-  constructor(message = "Konto noch nicht freigeschaltet") {
+  constructor(message = "Kein Zugriff") {
     super(message);
     this.name = "AdminMembershipError";
   }
@@ -36,8 +33,7 @@ export type VerifiedIdentity = {
 };
 
 // Verifies the session cookie and that the email is confirmed - the bare
-// minimum to act as yourself (e.g. create/join an org), independent of
-// whether you belong to an org yet. Throws AdminAuthError otherwise.
+// minimum to act as yourself. Throws AdminAuthError otherwise.
 export async function requireVerifiedUser(): Promise<VerifiedIdentity> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
@@ -56,24 +52,31 @@ export async function requireVerifiedUser(): Promise<VerifiedIdentity> {
 export type AdminIdentity = {
   uid: string;
   email: string;
-  orgId: string;
-  orgRole: NonNullable<AppUser["orgRole"]>;
+  orgId: string | null;
+  orgRole: AppUser["orgRole"];
+  membershipStatus: AppUser["membershipStatus"];
   isSuperAdmin: boolean;
 };
 
-// Same as requireVerifiedUser, plus requires an active org membership.
-// Throws AdminMembershipError if verified but not (yet) an active member
-// of an org.
+// Same as requireVerifiedUser, plus loads the users/{uid} doc. Using and
+// managing the app (rallies, templates, ...) doesn't require belonging to
+// an org - org membership is a separate, optional layer (see
+// /admin/organization), not a login gate.
 export async function requireAdmin(): Promise<AdminIdentity> {
   const { uid, email } = await requireVerifiedUser();
 
   const userDoc = await adminDb().collection("users").doc(uid).get();
   const user = userDoc.data() as AppUser | undefined;
-  if (!user || user.membershipStatus !== "active" || !user.orgId || !user.orgRole) {
-    throw new AdminMembershipError();
-  }
+  if (!user) throw new AdminAuthError();
 
-  return { uid, email, orgId: user.orgId, orgRole: user.orgRole, isSuperAdmin: user.isSuperAdmin };
+  return {
+    uid,
+    email,
+    orgId: user.orgId,
+    orgRole: user.orgRole,
+    membershipStatus: user.membershipStatus,
+    isSuperAdmin: user.isSuperAdmin,
+  };
 }
 
 export async function requireSuperAdmin(): Promise<AdminIdentity> {

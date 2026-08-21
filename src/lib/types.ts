@@ -114,9 +114,10 @@ export type Organization = {
 };
 
 export type OrgRole = "owner" | "member";
-// "none": not part of any org yet (fresh registration) - shown the
-// choose-org screen. "pending": requested to join an org, waiting on that
-// org's owner. "active": full member, can use the app.
+// "none": not part of any org yet (the default - org membership is
+// optional, managed from /admin/organization, not a login gate). "pending":
+// requested to join an org, waiting on that org's owner. "active": request
+// approved (or founded the org outright).
 export type MembershipStatus = "none" | "pending" | "active";
 
 // One doc per Firebase Auth account, doc id === Firebase uid. orgId/orgRole
