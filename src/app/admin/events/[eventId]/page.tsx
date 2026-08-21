@@ -183,7 +183,7 @@ export default function EventOverviewPage({
               href={`/admin/events/${eventId}/stations`}
               className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
             >
-              Rätsel einrichten
+              Rätsel bearbeiten
             </Link>
           )}
           <Link

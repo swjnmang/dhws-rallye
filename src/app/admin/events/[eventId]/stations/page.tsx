@@ -31,7 +31,7 @@ export default function EventStationsPage({
 
   return (
     <>
-      <AdminHeader title="Rätsel einrichten" />
+      <AdminHeader title="Rätsel bearbeiten" />
       <StationsEditor
         setId={eventId}
         extraHeaderActions={
