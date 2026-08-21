@@ -9,6 +9,8 @@ import AdminHeader from "../AdminHeader";
 import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
 import type { RallyEvent, Template } from "@/lib/types";
 
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
 const STATUS_LABEL: Record<RallyEvent["status"], string> = {
   draft: "In Vorbereitung",
   active: "Läuft",
@@ -30,6 +32,10 @@ export default function AdminEventsPage() {
   const [newTemplateName, setNewTemplateName] = useState("");
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  // Seeds the "is this finished rally older than 24h" check below - doesn't
+  // need to tick live, just needs a fixed reference point per page load.
+  // eslint-disable-next-line react-hooks/purity
+  const [now] = useState(Date.now());
 
   useEffect(() => {
     const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
@@ -127,7 +133,13 @@ export default function AdminEventsPage() {
   }
 
   const openEvents = events.filter((e) => e.status !== "finished");
-  const finishedEvents = events.filter((e) => e.status === "finished");
+  // Beendete Rallyes verschwinden 24h nach ihrem letzten "Beenden" von der
+  // Startseite (die Daten bleiben erhalten, nur die Anzeige blendet sie aus).
+  const finishedEvents = events.filter(
+    (e) =>
+      e.status === "finished" &&
+      (!e.finishedAt || now - e.finishedAt < TWENTY_FOUR_HOURS_MS)
+  );
 
   function EventCard({ event }: { event: RallyEvent }) {
     return (

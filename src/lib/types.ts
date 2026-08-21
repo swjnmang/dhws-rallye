@@ -33,6 +33,10 @@ export type RallyEvent = {
   // Every group's timer is measured from this shared moment, not from when
   // they individually joined, so the whole class starts the race together.
   startedAt: number | null;
+  // Set whenever status moves to "finished" (manually or via close-stale).
+  // Used only to auto-hide old finished rallies from the landing page after
+  // 24h - re-finishing a reopened rally overwrites it.
+  finishedAt: number | null;
   // Which template (if any) this event's stations were cloned from. Purely
   // informational - editing the event afterwards does not affect the template.
   templateId: string | null;

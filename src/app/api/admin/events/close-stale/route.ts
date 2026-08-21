@@ -29,7 +29,7 @@ export async function POST() {
   snap.docs.forEach((d) => {
     const event = d.data() as RallyEvent;
     if (event.startedAt && now - event.startedAt > TWENTY_FOUR_HOURS_MS) {
-      batch.update(d.ref, { status: "finished" });
+      batch.update(d.ref, { status: "finished", finishedAt: now });
       closedCount += 1;
     }
   });

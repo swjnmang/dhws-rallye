@@ -38,6 +38,12 @@ export async function PATCH(request: Request, { params }: Params) {
         update.startedAt = Date.now();
       }
     }
+
+    // Stamped fresh every time (unlike startedAt) - only used to auto-hide
+    // the rally from the landing page 24h after it most recently finished.
+    if (body.status === "finished") {
+      update.finishedAt = Date.now();
+    }
   }
 
   if (Object.keys(update).length === 0) {

@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     joinCode,
     createdAt: Date.now(),
     startedAt: null,
+    finishedAt: null,
     templateId,
   };
 
