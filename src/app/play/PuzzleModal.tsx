@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Puzzle } from "@/lib/types";
+import JigsawPuzzle from "./JigsawPuzzle";
 
 export default function PuzzleModal({
   roomName,
@@ -11,7 +12,7 @@ export default function PuzzleModal({
 }: {
   roomName: string;
   puzzle: Puzzle;
-  onSubmit: (answer: string | number) => Promise<boolean>;
+  onSubmit: (answer: string | number | number[]) => Promise<boolean>;
   onClose: () => void;
 }) {
   const [textAnswer, setTextAnswer] = useState("");
@@ -20,7 +21,7 @@ export default function PuzzleModal({
   const [wrongAttempt, setWrongAttempt] = useState(false);
   const [imageEnlarged, setImageEnlarged] = useState(false);
 
-  async function submit(answer: string | number) {
+  async function submit(answer: string | number | number[]) {
     setSubmitting(true);
     setWrongAttempt(false);
     const correct = await onSubmit(answer);
@@ -38,13 +39,22 @@ export default function PuzzleModal({
         <p className="text-sm font-medium text-slate-500">{roomName}</p>
         <h2 className="mt-1 text-xl font-bold text-slate-900">{puzzle.question}</h2>
 
-        {puzzle.imageUrl && (
+        {puzzle.type !== "jigsaw" && puzzle.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={puzzle.imageUrl}
             alt=""
             onClick={() => setImageEnlarged(true)}
             className="mt-4 max-h-48 w-full cursor-zoom-in rounded-xl border border-slate-200 object-cover"
+          />
+        )}
+
+        {puzzle.type === "jigsaw" && puzzle.imageUrl && (
+          <JigsawPuzzle
+            puzzleId={puzzle.id}
+            imageUrl={puzzle.imageUrl}
+            gridSize={puzzle.jigsawSize ?? 3}
+            onSolved={(order) => submit(order)}
           />
         )}
 

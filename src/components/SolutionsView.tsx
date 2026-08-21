@@ -80,6 +80,9 @@ export default function SolutionsView({ setId }: { setId: string }) {
   );
 
   function formatAnswer(puzzle: Puzzle, answer: PuzzleAnswer | undefined): string {
+    if (puzzle.type === "jigsaw") {
+      return `Bildpuzzle (${puzzle.jigsawSize ?? 3} × ${puzzle.jigsawSize ?? 3}) – siehe Bild oben`;
+    }
     if (!answer) return "—";
     if (puzzle.type === "mc") {
       return answer.correctOptionIndex !== null
@@ -110,6 +113,14 @@ export default function SolutionsView({ setId }: { setId: string }) {
               {hotspot.roomName}
             </p>
             <p className="text-sm text-slate-700">{puzzle.question}</p>
+            {puzzle.type === "jigsaw" && puzzle.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={puzzle.imageUrl}
+                alt=""
+                className="mt-1 h-24 w-24 rounded-lg border border-slate-200 object-cover"
+              />
+            )}
             <p className="text-sm font-semibold text-emerald-700">
               Lösung: {loadingAnswers ? "…" : formatAnswer(puzzle, answers[puzzle.id])}
             </p>

@@ -73,7 +73,7 @@ export type Hotspot = {
   puzzleId: string | null;
 };
 
-export type PuzzleType = "mc" | "text" | "number";
+export type PuzzleType = "mc" | "text" | "number" | "jigsaw";
 
 // Public shape - never contains the answer.
 export type Puzzle = {
@@ -85,6 +85,11 @@ export type Puzzle = {
   options: string[] | null;
   points: number;
   imageUrl: string | null;
+  // Grid size (NxN tiles) for a "jigsaw" puzzle; set only for that type.
+  // There's no separate correct answer to protect - solved just means the
+  // tiles are back in their original order, which the client can check
+  // itself - so this lives on the public Puzzle doc, not PuzzleAnswer.
+  jigsawSize: number | null;
 };
 
 export type PuzzleAnswer = {

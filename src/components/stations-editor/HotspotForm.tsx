@@ -40,6 +40,7 @@ export default function HotspotForm({
   const [correctOptionIndex, setCorrectOptionIndex] = useState(0);
   const [correctText, setCorrectText] = useState("");
   const [correctNumber, setCorrectNumber] = useState("");
+  const [jigsawSize, setJigsawSize] = useState(existing?.puzzle.jigsawSize ?? 3);
   const [radiusMeters, setRadiusMeters] = useState(
     existing?.hotspot.radiusMeters ?? DEFAULT_RADIUS_METERS
   );
@@ -90,6 +91,10 @@ export default function HotspotForm({
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+    if (type === "jigsaw" && !imageUrl) {
+      setError("Bitte zuerst ein Bild für das Puzzle hochladen");
+      return;
+    }
     setSaving(true);
     setError(null);
 
@@ -106,6 +111,8 @@ export default function HotspotForm({
           }
         : type === "number"
         ? { type, question, correctNumber: Number(correctNumber), points: 1, imageUrl }
+        : type === "jigsaw"
+        ? { type, question, jigsawSize, points: 1, imageUrl }
         : { type, question, correctText, points: 1, imageUrl };
 
     const positionFields = existing
@@ -191,7 +198,7 @@ export default function HotspotForm({
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-700">Rätsel-Typ</label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setType("mc")}
@@ -218,6 +225,15 @@ export default function HotspotForm({
               }`}
             >
               Zahl
+            </button>
+            <button
+              type="button"
+              onClick={() => setType("jigsaw")}
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
+                type === "jigsaw" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+              }`}
+            >
+              Bildpuzzle
             </button>
           </div>
         </div>
@@ -267,6 +283,25 @@ export default function HotspotForm({
               className="rounded-lg border border-slate-300 px-3 py-2"
             />
           </div>
+        ) : type === "jigsaw" ? (
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-slate-700">Rastergröße</label>
+            <select
+              value={jigsawSize}
+              onChange={(e) => setJigsawSize(Number(e.target.value))}
+              className="rounded-lg border border-slate-300 px-3 py-2"
+            >
+              {[2, 3, 4, 5].map((size) => (
+                <option key={size} value={size}>
+                  {size} × {size} Teile
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500">
+              Es gibt keine separate Lösung einzutragen – &bdquo;gelöst&ldquo; heißt, das Bild ist
+              wieder vollständig zusammengesetzt.
+            </p>
+          </div>
         ) : (
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-slate-700">Richtige Antwort</label>
@@ -280,7 +315,9 @@ export default function HotspotForm({
         )}
 
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-700">Bild (optional)</label>
+          <label className="text-sm font-medium text-slate-700">
+            {type === "jigsaw" ? "Puzzle-Bild" : "Bild (optional)"}
+          </label>
           {imageUrl && (
             <div className="relative w-fit">
               {/* eslint-disable-next-line @next/next/no-img-element */}

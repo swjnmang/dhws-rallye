@@ -72,6 +72,14 @@ export async function POST(request: Request) {
     isCorrect = typeof answer === "number" && answer === correctAnswer.correctOptionIndex;
   } else if (puzzle.type === "number") {
     isCorrect = typeof answer === "number" && answer === correctAnswer.correctNumber;
+  } else if (puzzle.type === "jigsaw") {
+    // No secret to protect here - "correct" just means every tile is back
+    // in its original slot, which the client already knows how to check.
+    const total = (puzzle.jigsawSize ?? 0) ** 2;
+    isCorrect =
+      Array.isArray(answer) &&
+      answer.length === total &&
+      answer.every((v, i) => v === i);
   } else {
     isCorrect =
       typeof answer === "string" &&

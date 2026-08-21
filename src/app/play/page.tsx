@@ -137,7 +137,7 @@ export default function PlayPage() {
   const activeHotspot = hotspots.find((h) => h.id === activeHotspotId) ?? null;
   const activePuzzle = activeHotspot?.puzzleId ? puzzles[activeHotspot.puzzleId] : null;
 
-  async function handleAnswerSubmit(answer: string | number): Promise<boolean> {
+  async function handleAnswerSubmit(answer: string | number | number[]): Promise<boolean> {
     if (!session || !activeHotspot?.puzzleId) return false;
     const res = await fetch("/api/answer", {
       method: "POST",

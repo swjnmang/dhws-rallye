@@ -67,6 +67,7 @@ export async function POST(request: Request) {
     options: puzzleInput.options,
     points: puzzleInput.points,
     imageUrl,
+    jigsawSize: puzzleInput.jigsawSize,
   };
   const answer: PuzzleAnswer = {
     correctOptionIndex: puzzleInput.correctOptionIndex,

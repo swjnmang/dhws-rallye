@@ -88,6 +88,7 @@ export async function PATCH(request: Request, { params }: Params) {
       options: puzzleInput.options,
       points: puzzleInput.points,
       imageUrl,
+      jigsawSize: puzzleInput.jigsawSize,
     };
     const answerUpdate: PuzzleAnswer = {
       correctOptionIndex: puzzleInput.correctOptionIndex,
