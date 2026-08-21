@@ -1,4 +1,4 @@
-// One-time setup: creates the organizations/tws doc that all pre-existing
+// One-time setup: creates the organizations/dhws doc that all pre-existing
 // data (and every Phase-1 self-registration) is scoped to. Safe to re-run -
 // skips if the doc already exists.
 //
@@ -17,20 +17,20 @@ async function main() {
   const app = getApps().length ? getApps()[0] : initializeApp({ credential: cert(JSON.parse(serviceAccountJson)) });
   const db = getFirestore(app);
 
-  const orgRef = db.collection("organizations").doc("tws");
+  const orgRef = db.collection("organizations").doc("dhws");
   const existing = await orgRef.get();
   if (existing.exists) {
-    console.log("organizations/tws already exists, nothing to do.");
+    console.log("organizations/dhws already exists, nothing to do.");
     return;
   }
 
   await orgRef.set({
-    id: "tws",
-    name: "TWS",
+    id: "dhws",
+    name: "DHWS",
     createdAt: Date.now(),
     createdByUid: "",
   });
-  console.log("Created organizations/tws.");
+  console.log("Created organizations/dhws.");
 }
 
 main()

@@ -1,5 +1,5 @@
 // One-time setup: after you've registered your own account through
-// /admin/register (which lands as a pending "tws" member like anyone
+// /admin/register (which lands as a pending "dhws" member like anyone
 // else), run this once to promote that account to an active, org-owning,
 // app-wide super-admin.
 //

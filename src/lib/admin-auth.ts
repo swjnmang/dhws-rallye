@@ -8,7 +8,7 @@ export const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
 // The id of the org every pre-existing (pre-multi-tenant) account and all
 // new self-registrations land in during Phase 1, before the real org
 // picker (join existing / create new) ships.
-export const DEFAULT_ORG_ID = "tws";
+export const DEFAULT_ORG_ID = "dhws";
 
 export class AdminAuthError extends Error {
   constructor(message = "Nicht angemeldet") {
