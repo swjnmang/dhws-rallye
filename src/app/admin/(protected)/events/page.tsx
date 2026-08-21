@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
+import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "@/app/admin/AdminHeader";
 import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
@@ -33,6 +33,8 @@ export default function AdminEventsPage() {
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
   const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
+  // undefined = not loaded yet, null = no org (rallies/templates need one).
+  const [orgId, setOrgId] = useState<string | null | undefined>(undefined);
   // Seeds the "is this finished rally older than 24h" check below - doesn't
   // need to tick live, just needs a fixed reference point per page load.
   // eslint-disable-next-line react-hooks/purity
@@ -41,31 +43,37 @@ export default function AdminEventsPage() {
   useEffect(() => {
     fetch("/api/admin/me")
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setPendingOrgRequests(data?.pendingCount ?? 0))
-      .catch(() => {});
+      .then((data) => {
+        setPendingOrgRequests(data?.pendingCount ?? 0);
+        setOrgId(data?.orgId ?? null);
+      })
+      .catch(() => setOrgId(null));
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+    if (!orgId) return;
+    const q = query(collection(db, "events"), where("orgId", "==", orgId), orderBy("createdAt", "desc"));
     return onSnapshot(q, (snap) => {
       setEvents(snap.docs.map((d) => d.data() as RallyEvent));
     });
-  }, []);
+  }, [orgId]);
 
   useEffect(() => {
-    const q = query(collection(db, "templates"), orderBy("createdAt", "desc"));
+    if (!orgId) return;
+    const q = query(collection(db, "templates"), where("orgId", "==", orgId), orderBy("createdAt", "desc"));
     return onSnapshot(q, (snap) => {
       setTemplates(snap.docs.map((d) => d.data() as Template));
     });
-  }, []);
+  }, [orgId]);
 
   // Auto-close is enforced server-side (an event older than 24h flips to
   // "finished" the next time anything touches it), but nudge that check
   // whenever a teacher opens this list too, so the split below stays fresh
   // without waiting for a group or admin action to trigger it elsewhere.
   useEffect(() => {
+    if (!orgId) return;
     fetch("/api/admin/events/close-stale", { method: "POST" }).catch(() => {});
-  }, []);
+  }, [orgId]);
 
   function resetToClosed() {
     setMode("closed");
@@ -179,17 +187,25 @@ export default function AdminEventsPage() {
               Rätseln auf Gebäudeplänen oder Karten. Deine Schüler:innen bilden Gruppen, laufen die
               Stationen ab und lösen dort die Rätsel, um Punkte zu sammeln.
             </p>
+            {orgId === null && (
+              <p className="text-center text-sm text-amber-700">
+                Du gehörst noch keiner Organisation an. Gründe eine oder tritt einer bei, um Rallyes
+                und Vorlagen anzulegen.
+              </p>
+            )}
             <button
               type="button"
               onClick={() => setMode("choice")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              disabled={!orgId}
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
             >
               Neue Rallye anlegen
             </button>
             <button
               type="button"
               onClick={() => setMode("manageTemplates")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              disabled={!orgId}
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
             >
               Vorlage erstellen / bearbeiten
             </button>

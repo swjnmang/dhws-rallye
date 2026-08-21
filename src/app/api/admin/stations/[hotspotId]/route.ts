@@ -3,15 +3,17 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
-import type { Puzzle, PuzzleAnswer } from "@/lib/types";
+import { resolveSetOrgId } from "@/lib/org-scope";
+import type { Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 
 type Params = { params: Promise<{ hotspotId: string }> };
 
 // Lets the edit form re-show the previously saved correct answer, which the
 // public client SDK can never read directly (see firestore.rules).
 export async function GET(_request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -25,7 +27,13 @@ export async function GET(_request: Request, { params }: Params) {
   if (!hotspotSnap.exists) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
   }
-  const puzzleId = hotspotSnap.data()?.puzzleId as string | null;
+  const hotspot = hotspotSnap.data() as Hotspot;
+  const setOrgId = await resolveSetOrgId(hotspot.setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+  }
+
+  const puzzleId = hotspot.puzzleId;
   if (!puzzleId) {
     return NextResponse.json({ answer: null });
   }
@@ -34,8 +42,9 @@ export async function GET(_request: Request, { params }: Params) {
 }
 
 export async function PATCH(request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -49,6 +58,11 @@ export async function PATCH(request: Request, { params }: Params) {
   const hotspotSnap = await hotspotRef.get();
   if (!hotspotSnap.exists) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
+  }
+  const hotspotData = hotspotSnap.data() as Hotspot;
+  const setOrgId = await resolveSetOrgId(hotspotData.setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
   const hotspotUpdate: Record<string, unknown> = {};
@@ -74,7 +88,7 @@ export async function PATCH(request: Request, { params }: Params) {
         ? body.puzzle.imageUrl
         : null;
 
-    const puzzleId = hotspotSnap.data()?.puzzleId as string;
+    const puzzleId = hotspotData.puzzleId as string;
     const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
     const puzzleSnap = await puzzleRef.get();
     const previousImageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
@@ -104,8 +118,9 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -119,7 +134,12 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (!hotspotSnap.exists) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
   }
-  const puzzleId = hotspotSnap.data()?.puzzleId as string | null;
+  const hotspot = hotspotSnap.data() as Hotspot;
+  const setOrgId = await resolveSetOrgId(hotspot.setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+  }
+  const puzzleId = hotspot.puzzleId;
 
   const batch = adminDb().batch();
   batch.delete(hotspotRef);

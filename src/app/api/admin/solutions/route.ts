@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
+import { resolveSetOrgId } from "@/lib/org-scope";
 import type { PuzzleAnswer } from "@/lib/types";
 
 // Correct answers are never readable by the public client SDK (see
 // firestore.rules) so a teacher can only see them through this admin-gated
 // route, which fetches them server-side via the Admin SDK.
 export async function GET(request: Request) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -20,6 +22,11 @@ export async function GET(request: Request) {
   const setId = searchParams.get("setId");
   if (!setId) {
     return NextResponse.json({ error: "setId fehlt" }, { status: 400 });
+  }
+
+  const setOrgId = await resolveSetOrgId(setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
   const db = adminDb();

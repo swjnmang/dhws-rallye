@@ -3,6 +3,7 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
 import { FLOORS } from "@/lib/floors";
+import { resolveSetOrgId } from "@/lib/org-scope";
 import type { CustomFloor, Puzzle } from "@/lib/types";
 
 type Params = { params: Promise<{ floorId: string }> };
@@ -13,8 +14,9 @@ type Params = { params: Promise<{ floorId: string }> };
 // always 0/1/2), so a custom floor can end up anywhere in the sequence,
 // including before all fixed floors.
 export async function PATCH(request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -29,7 +31,17 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
 
-  await adminDb().collection("floors").doc(floorId).update({ order });
+  const floorRef = adminDb().collection("floors").doc(floorId);
+  const floorSnap = await floorRef.get();
+  if (!floorSnap.exists) {
+    return NextResponse.json({ error: "Ebene nicht gefunden" }, { status: 404 });
+  }
+  const setOrgId = await resolveSetOrgId((floorSnap.data() as CustomFloor).setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+  }
+
+  await floorRef.update({ order });
 
   return NextResponse.json({ ok: true });
 }
@@ -70,8 +82,9 @@ async function deleteBaseFloorForSet(floorId: string, setId: string) {
 }
 
 export async function DELETE(request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -87,6 +100,10 @@ export async function DELETE(request: Request, { params }: Params) {
     if (!setId) {
       return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
     }
+    const setOrgId = await resolveSetOrgId(setId);
+    if (!setOrgId || setOrgId !== admin.orgId) {
+      return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
+    }
     await deleteBaseFloorForSet(floorId, setId);
     return NextResponse.json({ ok: true });
   }
@@ -96,6 +113,10 @@ export async function DELETE(request: Request, { params }: Params) {
   const floorSnap = await floorRef.get();
   if (!floorSnap.exists) {
     return NextResponse.json({ error: "Ebene nicht gefunden" }, { status: 404 });
+  }
+  const setOrgId = await resolveSetOrgId((floorSnap.data() as CustomFloor).setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
   // Deleting a floor also removes every room/puzzle placed on it.

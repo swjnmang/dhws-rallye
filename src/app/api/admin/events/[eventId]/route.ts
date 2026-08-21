@@ -24,15 +24,21 @@ export async function PATCH(request: Request, { params }: Params) {
   const body = await request.json().catch(() => null);
   const eventRef = adminDb().collection("events").doc(eventId);
 
+  const snap = await eventRef.get();
+  const event = snap.data() as RallyEvent | undefined;
+  if (!event) {
+    return NextResponse.json({ error: "Rallye nicht gefunden" }, { status: 404 });
+  }
+  if (event.orgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff auf diese Rallye" }, { status: 403 });
+  }
+
   const update: Record<string, unknown> = {};
   if (typeof body?.name === "string" && body.name.trim()) {
     update.name = body.name.trim();
   }
   if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status)) {
-    const snap = await eventRef.get();
-    const event = snap.data() as RallyEvent | undefined;
-
-    if (body.status === "finished" && event && !canFinishEvent(admin.uid, event)) {
+    if (body.status === "finished" && !canFinishEvent(admin.uid, event)) {
       return NextResponse.json(
         { error: "Nur wer die Rallye angelegt oder gestartet hat, darf sie beenden" },
         { status: 403 }
@@ -47,7 +53,7 @@ export async function PATCH(request: Request, { params }: Params) {
     // startedByUid, unlike startedAt, is refreshed on every (re-)start -
     // whoever (re-)opens the rally is who may finish it from here on.
     if (body.status === "active") {
-      if (!event?.startedAt) {
+      if (!event.startedAt) {
         update.startedAt = Date.now();
       }
       update.startedByUid = admin.uid;
@@ -69,8 +75,9 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(_request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -81,6 +88,15 @@ export async function DELETE(_request: Request, { params }: Params) {
   const { eventId } = await params;
   const db = adminDb();
   const eventRef = db.collection("events").doc(eventId);
+
+  const eventSnap = await eventRef.get();
+  const event = eventSnap.data() as RallyEvent | undefined;
+  if (!event) {
+    return NextResponse.json({ error: "Rallye nicht gefunden" }, { status: 404 });
+  }
+  if (event.orgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff auf diese Rallye" }, { status: 403 });
+  }
 
   const [groupsSnap, hotspotsSnap, puzzlesSnap, floorsSnap] = await Promise.all([
     eventRef.collection("groups").get(),

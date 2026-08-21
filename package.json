@@ -14,7 +14,8 @@
     "start": "next start",
     "lint": "eslint",
     "migrate:create-org": "tsx scripts/create-default-org.mts",
-    "migrate:bootstrap-superadmin": "tsx scripts/bootstrap-superadmin.mts"
+    "migrate:bootstrap-superadmin": "tsx scripts/bootstrap-superadmin.mts",
+    "migrate:backfill-org-scoping": "tsx scripts/backfill-org-scoping.mts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.1.1",

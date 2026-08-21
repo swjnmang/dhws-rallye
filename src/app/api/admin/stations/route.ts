@@ -3,13 +3,15 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { generateId } from "@/lib/codes";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
+import { resolveSetOrgId } from "@/lib/org-scope";
 import type { Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 
 // Hotspots/puzzles live in shared top-level collections, scoped by `setId`
 // (an eventId or a templateId) rather than nested under separate parents.
 export async function POST(request: Request) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -36,6 +38,11 @@ export async function POST(request: Request) {
 
   if (!setId || !floorId || !roomName || !puzzleInput || (!hasImagePosition && !hasMapPosition)) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
+  }
+
+  const setOrgId = await resolveSetOrgId(setId);
+  if (!setOrgId || setOrgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
   const hotspotsRef = adminDb().collection("hotspots");

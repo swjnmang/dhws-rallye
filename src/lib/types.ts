@@ -47,6 +47,10 @@ export type RallyEvent = {
   // backwards compatibility.
   createdByUid: string;
   startedByUid: string | null;
+  // Which org this rally belongs to - events from before org-scoping
+  // existed have this unset, which every org-ownership check treats as
+  // "belongs to no one" (not "belongs to everyone").
+  orgId: string;
 };
 
 // A reusable, named set of stations a teacher has saved from a finished
@@ -55,6 +59,7 @@ export type Template = {
   id: string;
   name: string;
   createdAt: number;
+  orgId: string;
 };
 
 // Hotspots/puzzles/answers all carry a `setId`, which is either an eventId
@@ -159,4 +164,9 @@ export type Group = {
   // Motivational gamification counter, +5 per solved puzzle. Not used for
   // ranking (that's totalSeconds) - purely a morale display for students.
   xp: number;
+  // Copied from the parent event at join time. Needed because the highscore
+  // query reads across every event's groups subcollection at once
+  // (collectionGroup) and can't otherwise filter by which org the parent
+  // event belongs to.
+  orgId: string;
 };

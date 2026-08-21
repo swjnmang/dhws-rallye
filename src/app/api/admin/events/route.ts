@@ -3,7 +3,7 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { generateId, generateJoinCode } from "@/lib/codes";
 import { cloneStations } from "@/lib/clone-stations";
-import type { RallyEvent } from "@/lib/types";
+import type { RallyEvent, Template } from "@/lib/types";
 
 export async function POST(request: Request) {
   let admin;
@@ -15,12 +15,26 @@ export async function POST(request: Request) {
     }
     throw e;
   }
+  if (!admin.orgId) {
+    return NextResponse.json(
+      { error: "Du musst zuerst einer Organisation angehören" },
+      { status: 400 }
+    );
+  }
 
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const templateId = typeof body?.templateId === "string" && body.templateId ? body.templateId : null;
   if (!name) {
     return NextResponse.json({ error: "Name fehlt" }, { status: 400 });
+  }
+
+  if (templateId) {
+    const templateDoc = await adminDb().collection("templates").doc(templateId).get();
+    const template = templateDoc.data() as Template | undefined;
+    if (!template || template.orgId !== admin.orgId) {
+      return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+    }
   }
 
   const eventsRef = adminDb().collection("events");
@@ -44,6 +58,7 @@ export async function POST(request: Request) {
     templateId,
     createdByUid: admin.uid,
     startedByUid: null,
+    orgId: admin.orgId,
   };
 
   await eventsRef.doc(id).set(event);

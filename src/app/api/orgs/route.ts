@@ -2,7 +2,38 @@ import { NextResponse } from "next/server";
 import { requireVerifiedUser, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { generateId } from "@/lib/codes";
-import type { AppUser, Organization } from "@/lib/types";
+import { cloneStations } from "@/lib/clone-stations";
+import type { AppUser, Organization, Template } from "@/lib/types";
+
+// The id of the original organization (see scripts/create-default-org.mts).
+// Its oldest template is cloned into every newly founded org below, as a
+// ready-made, clearly-labeled example the new owner can freely edit or
+// delete.
+const SEED_TEMPLATE_ORG_ID = "dhws";
+
+async function seedExampleTemplate(newOrgId: string): Promise<void> {
+  // A plain equality filter, sorted client-side rather than via .orderBy(),
+  // so this doesn't need a manual composite index (orgId + createdAt) that
+  // Firestore would otherwise reject the query for on a fresh project.
+  const sourceSnap = await adminDb()
+    .collection("templates")
+    .where("orgId", "==", SEED_TEMPLATE_ORG_ID)
+    .get();
+  if (sourceSnap.empty) return;
+
+  const sourceTemplate = sourceSnap.docs
+    .map((d) => d.data() as Template)
+    .sort((a, b) => a.createdAt - b.createdAt)[0];
+  const newTemplateId = generateId();
+  const newTemplate: Template = {
+    id: newTemplateId,
+    name: `Beispiel-Vorlage: ${sourceTemplate.name} (frei bearbeitbar)`,
+    createdAt: Date.now(),
+    orgId: newOrgId,
+  };
+  await adminDb().collection("templates").doc(newTemplateId).set(newTemplate);
+  await cloneStations(sourceTemplate.id, newTemplateId);
+}
 
 // List of orgs a verified-but-orgless user can request to join. Deliberately
 // its own endpoint rather than an open client-side Firestore read (there is
@@ -71,6 +102,8 @@ export async function POST(request: Request) {
     },
     { merge: true }
   );
+
+  await seedExampleTemplate(id);
 
   return NextResponse.json({ org });
 }

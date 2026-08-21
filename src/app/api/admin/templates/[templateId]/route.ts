@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
-import type { CustomFloor, Puzzle } from "@/lib/types";
+import type { CustomFloor, Puzzle, Template } from "@/lib/types";
 
 type Params = { params: Promise<{ templateId: string }> };
 
 export async function DELETE(_request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -18,6 +19,16 @@ export async function DELETE(_request: Request, { params }: Params) {
 
   const { templateId } = await params;
   const db = adminDb();
+
+  const templateRef = db.collection("templates").doc(templateId);
+  const templateSnap = await templateRef.get();
+  const template = templateSnap.data() as Template | undefined;
+  if (!template) {
+    return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+  }
+  if (template.orgId !== admin.orgId) {
+    return NextResponse.json({ error: "Kein Zugriff auf diese Vorlage" }, { status: 403 });
+  }
 
   const [hotspotsSnap, puzzlesSnap, floorsSnap, removedFloorsSnap] = await Promise.all([
     db.collection("hotspots").where("setId", "==", templateId).get(),
@@ -45,7 +56,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   });
   floorsSnap.docs.forEach((d) => batch.delete(d.ref));
   removedFloorsSnap.docs.forEach((d) => batch.delete(d.ref));
-  batch.delete(db.collection("templates").doc(templateId));
+  batch.delete(templateRef);
   await batch.commit();
 
   return NextResponse.json({ ok: true });
