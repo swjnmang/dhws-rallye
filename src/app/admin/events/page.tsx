@@ -185,6 +185,12 @@ export default function AdminEventsPage() {
             >
               Vorlage erstellen / bearbeiten
             </button>
+            <Link
+              href="/admin/highscore"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+            >
+              Highscore
+            </Link>
           </div>
         )}
 
