@@ -174,20 +174,20 @@ export default function AdminEventsPage() {
             <button
               type="button"
               onClick={() => setMode("choice")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
             >
               Neue Rallye anlegen
             </button>
             <button
               type="button"
               onClick={() => setMode("manageTemplates")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
             >
               Vorlage erstellen / bearbeiten
             </button>
             <Link
               href="/admin/highscore"
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
             >
               Highscore
             </Link>
@@ -218,7 +218,7 @@ export default function AdminEventsPage() {
               <button
                 type="submit"
                 disabled={creatingTemplate}
-                className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white disabled:opacity-50"
+                className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:opacity-50"
               >
                 {creatingTemplate ? "Legt an…" : "Neue Vorlage anlegen"}
               </button>
@@ -274,14 +274,14 @@ export default function AdminEventsPage() {
               type="button"
               onClick={() => setMode("template")}
               disabled={templates.length === 0}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
             >
               Vorlage nutzen
             </button>
             <button
               type="button"
               onClick={() => setMode("scratch")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white"
+              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
             >
               Komplett neue Rallye anlegen
             </button>
@@ -333,7 +333,7 @@ export default function AdminEventsPage() {
             <button
               type="submit"
               disabled={creating}
-              className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition hover:border-blue-600 hover:bg-blue-600 hover:text-white disabled:opacity-50"
+              className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:opacity-50"
             >
               Anlegen
             </button>
