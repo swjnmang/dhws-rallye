@@ -32,10 +32,18 @@ export default function AdminEventsPage() {
   const [newTemplateName, setNewTemplateName] = useState("");
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
   // Seeds the "is this finished rally older than 24h" check below - doesn't
   // need to tick live, just needs a fixed reference point per page load.
   // eslint-disable-next-line react-hooks/purity
   const [now] = useState(Date.now());
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setPendingOrgRequests(data?.pendingCount ?? 0))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
@@ -193,9 +201,14 @@ export default function AdminEventsPage() {
             </Link>
             <Link
               href="/admin/organization"
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              className="relative rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
             >
               Organisation erstellen / verwalten
+              {pendingOrgRequests > 0 && (
+                <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-xs font-bold text-white">
+                  {pendingOrgRequests}
+                </span>
+              )}
             </Link>
           </div>
         )}
