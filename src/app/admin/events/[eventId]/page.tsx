@@ -173,7 +173,11 @@ export default function EventOverviewPage({
           </section>
         )}
 
-        <section className={`grid grid-cols-1 gap-3 ${event.status === "draft" ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+        <section
+          className={`grid grid-cols-1 gap-3 ${
+            event.status === "draft" ? "sm:grid-cols-4" : "sm:grid-cols-3"
+          }`}
+        >
           {event.status === "draft" && (
             <Link
               href={`/admin/events/${eventId}/stations`}
@@ -182,6 +186,12 @@ export default function EventOverviewPage({
               Rätsel einrichten
             </Link>
           )}
+          <Link
+            href={`/admin/events/${eventId}/solutions`}
+            className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
+          >
+            Lösungen anzeigen
+          </Link>
           <Link
             href={`/admin/events/${eventId}/live`}
             className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"

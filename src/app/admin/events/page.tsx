@@ -221,6 +221,12 @@ export default function AdminEventsPage() {
                     >
                       Bearbeiten
                     </Link>
+                    <Link
+                      href={`/admin/templates/${t.id}/solutions`}
+                      className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+                    >
+                      Lösungen
+                    </Link>
                     <button
                       onClick={() => setDeletingTemplate(t)}
                       className="text-sm font-medium text-red-600 hover:text-red-800"
