@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import type { Hotspot, Puzzle, PuzzleType } from "@/lib/types";
+import { useEffect, useState } from "react";
+import type { Hotspot, Puzzle, PuzzleAnswer, PuzzleType } from "@/lib/types";
 
 type ExistingData = {
   hotspot: Hotspot;
@@ -49,6 +49,23 @@ export default function HotspotForm({
   const [error, setError] = useState<string | null>(null);
 
   const isMap = existing ? existing.hotspot.lat !== null : position.kind === "map";
+
+  // Correct answers never reach the public client SDK (see firestore.rules),
+  // so re-showing a previously saved one requires this admin-gated fetch -
+  // without it, reopening a room would silently reset its answer to blank.
+  const existingHotspotId = existing?.hotspot.id ?? null;
+  useEffect(() => {
+    if (!existingHotspotId) return;
+    fetch(`/api/admin/stations/${existingHotspotId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        const answer = data.answer as PuzzleAnswer | null;
+        if (!answer) return;
+        if (answer.correctOptionIndex !== null) setCorrectOptionIndex(answer.correctOptionIndex);
+        if (answer.correctText !== null) setCorrectText(answer.correctText);
+        if (answer.correctNumber !== null) setCorrectNumber(String(answer.correctNumber));
+      });
+  }, [existingHotspotId]);
 
   async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

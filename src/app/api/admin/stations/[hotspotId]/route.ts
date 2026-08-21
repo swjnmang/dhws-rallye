@@ -7,6 +7,32 @@ import type { Puzzle, PuzzleAnswer } from "@/lib/types";
 
 type Params = { params: Promise<{ hotspotId: string }> };
 
+// Lets the edit form re-show the previously saved correct answer, which the
+// public client SDK can never read directly (see firestore.rules).
+export async function GET(_request: Request, { params }: Params) {
+  try {
+    await requireAdmin();
+  } catch (e) {
+    if (e instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+    }
+    throw e;
+  }
+
+  const { hotspotId } = await params;
+  const db = adminDb();
+  const hotspotSnap = await db.collection("hotspots").doc(hotspotId).get();
+  if (!hotspotSnap.exists) {
+    return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
+  }
+  const puzzleId = hotspotSnap.data()?.puzzleId as string | null;
+  if (!puzzleId) {
+    return NextResponse.json({ answer: null });
+  }
+  const answerSnap = await db.collection("puzzleAnswers").doc(puzzleId).get();
+  return NextResponse.json({ answer: answerSnap.exists ? (answerSnap.data() as PuzzleAnswer) : null });
+}
+
 export async function PATCH(request: Request, { params }: Params) {
   try {
     await requireAdmin();
