@@ -46,7 +46,24 @@ export default function JigsawPuzzle({
   const total = gridSize * gridSize;
   const [order, setOrder] = useState<number[]>(() => seededShuffle(total, puzzleId));
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+  const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const solvedRef = useRef(false);
+
+  // Uploaded images aren't always square. Rather than stretching the whole
+  // image to fit an NxN square (which distorts it), read its true pixel
+  // size once and center-crop a square region from it in the tile math
+  // below - no server-side processing needed.
+  useEffect(() => {
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled) setNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    };
+    img.src = imageUrl;
+    return () => {
+      cancelled = true;
+    };
+  }, [imageUrl]);
 
   useEffect(() => {
     if (solvedRef.current) return;
@@ -55,6 +72,27 @@ export default function JigsawPuzzle({
       onSolved(order);
     }
   }, [order, onSolved]);
+
+  function tileBackground(originalIndex: number): React.CSSProperties {
+    const row = Math.floor(originalIndex / gridSize);
+    const col = originalIndex % gridSize;
+    if (!naturalSize) {
+      // Briefly, before the image's real size is known.
+      return { backgroundImage: `url(${imageUrl})`, backgroundSize: "cover" };
+    }
+    const { w, h } = naturalSize;
+    const side = Math.min(w, h); // the centered square we crop from
+    const tile = side / gridSize; // one tile's edge, in source pixels
+    const offsetX = (w - side) / 2;
+    const offsetY = (h - side) / 2;
+    return {
+      backgroundImage: `url(${imageUrl})`,
+      backgroundSize: `${(w / tile) * 100}% ${(h / tile) * 100}%`,
+      backgroundPosition: `${((offsetX + col * tile) / (w - tile)) * 100}% ${
+        ((offsetY + row * tile) / (h - tile)) * 100
+      }%`,
+    };
+  }
 
   function handleTileClick(slot: number) {
     if (selectedSlot === null) {
@@ -78,29 +116,18 @@ export default function JigsawPuzzle({
       className="mt-6 grid gap-1 overflow-hidden rounded-xl border border-slate-300 bg-slate-100"
       style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, aspectRatio: "1 / 1" }}
     >
-      {order.map((originalIndex, slot) => {
-        const row = Math.floor(originalIndex / gridSize);
-        const col = originalIndex % gridSize;
-        return (
-          <button
-            key={slot}
-            type="button"
-            onClick={() => handleTileClick(slot)}
-            aria-label={`Kachel ${slot + 1}`}
-            className={`aspect-square bg-slate-200 bg-cover transition ${
-              selectedSlot === slot ? "ring-4 ring-inset ring-indigo-500" : ""
-            }`}
-            style={{
-              backgroundImage: `url(${imageUrl})`,
-              backgroundSize: `${gridSize * 100}% ${gridSize * 100}%`,
-              backgroundPosition:
-                gridSize > 1
-                  ? `${(col / (gridSize - 1)) * 100}% ${(row / (gridSize - 1)) * 100}%`
-                  : "0 0",
-            }}
-          />
-        );
-      })}
+      {order.map((originalIndex, slot) => (
+        <button
+          key={slot}
+          type="button"
+          onClick={() => handleTileClick(slot)}
+          aria-label={`Kachel ${slot + 1}`}
+          className={`aspect-square bg-slate-200 bg-cover transition ${
+            selectedSlot === slot ? "ring-4 ring-inset ring-indigo-500" : ""
+          }`}
+          style={tileBackground(originalIndex)}
+        />
+      ))}
     </div>
   );
 }
