@@ -1,7 +1,7 @@
 "use client";
 
 import { use } from "react";
-import AdminHeader from "../../../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import SolutionsView from "@/components/SolutionsView";
 
 export default function EventSolutionsPage({

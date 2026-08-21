@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import AdminHeader from "../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import type { HighscoreEntry } from "@/app/api/admin/highscore/route";
 
 const MEDALS = ["🥇", "🥈", "🥉"];

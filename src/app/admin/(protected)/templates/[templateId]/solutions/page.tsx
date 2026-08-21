@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
-import AdminHeader from "../../../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import SolutionsView from "@/components/SolutionsView";
 import type { Template } from "@/lib/types";
 

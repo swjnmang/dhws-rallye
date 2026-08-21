@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
-import AdminHeader from "../../../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import StationsEditor from "@/components/stations-editor/StationsEditor";
 import type { Template } from "@/lib/types";
 

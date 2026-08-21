@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import AdminHeader from "../../../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import StationsEditor from "@/components/stations-editor/StationsEditor";
 
 export default function EventStationsPage({

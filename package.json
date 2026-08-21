@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:create-org": "tsx scripts/create-default-org.mts",
+    "migrate:bootstrap-superadmin": "tsx scripts/bootstrap-superadmin.mts"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.1.1",
@@ -26,9 +28,11 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

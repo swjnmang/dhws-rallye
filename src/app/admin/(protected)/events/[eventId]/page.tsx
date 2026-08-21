@@ -5,7 +5,7 @@ import Link from "next/link";
 import { collection, doc, onSnapshot } from "firebase/firestore";
 import QRCode from "qrcode";
 import { db } from "@/lib/firebase-client";
-import AdminHeader from "../../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import type { RallyEvent, EventStatus, Group } from "@/lib/types";
 
 export default function EventOverviewPage({

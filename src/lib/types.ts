@@ -103,6 +103,38 @@ export type SolvedEntry = {
   attempts: number;
 };
 
+// A school/organization. Rallys, templates and highscores are scoped to
+// exactly one org (see RallyEvent.orgId / Template.orgId), so different
+// schools never see each other's data.
+export type Organization = {
+  id: string;
+  name: string;
+  createdAt: number;
+  createdByUid: string;
+};
+
+export type OrgRole = "owner" | "member";
+export type MembershipStatus = "pending" | "active" | "rejected";
+
+// One doc per Firebase Auth account, doc id === Firebase uid. orgRole is
+// scoped to this user's own org (an "owner" can approve/manage members of
+// their org); isSuperAdmin is a separate, app-wide flag unrelated to any
+// org, only ever set by the app operator directly in Firestore/the
+// bootstrap script - never through app UI, to avoid a privilege-escalation
+// path.
+export type AppUser = {
+  uid: string;
+  email: string;
+  displayName: string | null;
+  orgId: string;
+  orgRole: OrgRole;
+  membershipStatus: MembershipStatus;
+  isSuperAdmin: boolean;
+  createdAt: number;
+  approvedAt: number | null;
+  approvedByUid: string | null;
+};
+
 export type Group = {
   id: string;
   name: string;

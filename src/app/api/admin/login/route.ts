@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE_NAME, checkAdminPassword } from "@/lib/admin-auth";
+import { ADMIN_COOKIE_NAME, SESSION_MAX_AGE_MS, createSessionCookie } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const password = typeof body?.password === "string" ? body.password : "";
+  const idToken = typeof body?.idToken === "string" ? body.idToken : "";
+  if (!idToken) {
+    return NextResponse.json({ error: "Anmeldung fehlgeschlagen" }, { status: 401 });
+  }
 
-  if (!checkAdminPassword(password)) {
-    return NextResponse.json({ error: "Falsches Passwort" }, { status: 401 });
+  let sessionCookie: string;
+  try {
+    sessionCookie = await createSessionCookie(idToken);
+  } catch {
+    return NextResponse.json({ error: "Anmeldung fehlgeschlagen" }, { status: 401 });
   }
 
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(ADMIN_COOKIE_NAME, process.env.ADMIN_SESSION_SECRET!, {
+  response.cookies.set(ADMIN_COOKIE_NAME, sessionCookie, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 12,
+    maxAge: SESSION_MAX_AGE_MS / 1000,
   });
   return response;
 }

@@ -4,7 +4,7 @@ import { use, useEffect, useMemo, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { formatDuration } from "@/lib/format";
-import AdminHeader from "../../../AdminHeader";
+import AdminHeader from "@/app/admin/AdminHeader";
 import type { Group } from "@/lib/types";
 
 const MEDALS = ["🥇", "🥈", "🥉"];
