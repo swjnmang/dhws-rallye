@@ -2,15 +2,17 @@ import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
-import type { CustomFloor, EventStatus, Puzzle } from "@/lib/types";
+import { canFinishEvent } from "@/lib/permissions";
+import type { CustomFloor, EventStatus, Puzzle, RallyEvent } from "@/lib/types";
 
 type Params = { params: Promise<{ eventId: string }> };
 
 const VALID_STATUSES: EventStatus[] = ["draft", "active", "finished"];
 
 export async function PATCH(request: Request, { params }: Params) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -27,16 +29,28 @@ export async function PATCH(request: Request, { params }: Params) {
     update.name = body.name.trim();
   }
   if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status)) {
+    const snap = await eventRef.get();
+    const event = snap.data() as RallyEvent | undefined;
+
+    if (body.status === "finished" && event && !canFinishEvent(admin.uid, event)) {
+      return NextResponse.json(
+        { error: "Nur wer die Rallye angelegt oder gestartet hat, darf sie beenden" },
+        { status: 403 }
+      );
+    }
+
     update.status = body.status;
 
     // The whole class starts the race together: stamp a shared start time
     // the first time the event moves into "active", never again after that
     // (so reopening a finished event doesn't reset everyone's clock).
+    // startedByUid, unlike startedAt, is refreshed on every (re-)start -
+    // whoever (re-)opens the rally is who may finish it from here on.
     if (body.status === "active") {
-      const snap = await eventRef.get();
-      if (!snap.data()?.startedAt) {
+      if (!event?.startedAt) {
         update.startedAt = Date.now();
       }
+      update.startedByUid = admin.uid;
     }
 
     // Stamped fresh every time (unlike startedAt) - only used to auto-hide

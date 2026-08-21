@@ -40,6 +40,13 @@ export type RallyEvent = {
   // Which template (if any) this event's stations were cloned from. Purely
   // informational - editing the event afterwards does not affect the template.
   templateId: string | null;
+  // Who created / most recently started (draft -> active, including a
+  // reopen) this event - only one of these two may finish it (see
+  // canFinishEvent in permissions.ts). Events from before this field
+  // existed have neither set, which is treated as "anyone may finish" for
+  // backwards compatibility.
+  createdByUid: string;
+  startedByUid: string | null;
 };
 
 // A reusable, named set of stations a teacher has saved from a finished

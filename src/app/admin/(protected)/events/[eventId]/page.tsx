@@ -6,6 +6,7 @@ import { collection, doc, onSnapshot } from "firebase/firestore";
 import QRCode from "qrcode";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "@/app/admin/AdminHeader";
+import { canFinishEvent } from "@/lib/permissions";
 import type { RallyEvent, EventStatus, Group } from "@/lib/types";
 
 export default function EventOverviewPage({
@@ -21,12 +22,20 @@ export default function EventOverviewPage({
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [uid, setUid] = useState<string | null>(null);
 
   useEffect(() => {
     return onSnapshot(doc(db, "events", eventId), (snap) => {
       setEvent(snap.exists() ? (snap.data() as RallyEvent) : null);
     });
   }, [eventId]);
+
+  useEffect(() => {
+    fetch("/api/admin/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => setUid(data?.uid ?? null))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     return onSnapshot(collection(db, "events", eventId, "groups"), (snap) => {
@@ -52,12 +61,16 @@ export default function EventOverviewPage({
 
   async function updateStatus(status: EventStatus) {
     setUpdating(true);
-    await fetch(`/api/admin/events/${eventId}`, {
+    const res = await fetch(`/api/admin/events/${eventId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
     setUpdating(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error ?? "Aktion fehlgeschlagen");
+    }
   }
 
   function handleStartClick() {
@@ -117,7 +130,7 @@ export default function EventOverviewPage({
                 Rallye starten
               </button>
             )}
-            {event.status === "active" && (
+            {event.status === "active" && uid && canFinishEvent(uid, event) && (
               <button
                 onClick={() => updateStatus("finished")}
                 disabled={updating}
@@ -125,6 +138,11 @@ export default function EventOverviewPage({
               >
                 Rallye beenden
               </button>
+            )}
+            {event.status === "active" && uid && !canFinishEvent(uid, event) && (
+              <p className="text-sm text-slate-500">
+                Nur wer die Rallye angelegt oder gestartet hat, kann sie beenden.
+              </p>
             )}
             {event.status === "finished" && (
               <button

@@ -36,6 +36,7 @@ export async function GET() {
   }
 
   return NextResponse.json({
+    uid: admin.uid,
     orgId: admin.orgId,
     orgName,
     orgRole: admin.orgRole,

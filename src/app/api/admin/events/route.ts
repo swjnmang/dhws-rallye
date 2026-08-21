@@ -6,8 +6,9 @@ import { cloneStations } from "@/lib/clone-stations";
 import type { RallyEvent } from "@/lib/types";
 
 export async function POST(request: Request) {
+  let admin;
   try {
-    await requireAdmin();
+    admin = await requireAdmin();
   } catch (e) {
     if (e instanceof AdminAuthError) {
       return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
@@ -41,6 +42,8 @@ export async function POST(request: Request) {
     startedAt: null,
     finishedAt: null,
     templateId,
+    createdByUid: admin.uid,
+    startedByUid: null,
   };
 
   await eventsRef.doc(id).set(event);
