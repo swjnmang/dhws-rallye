@@ -27,6 +27,7 @@ export default function PlayPage() {
 
   const [selectedFloorId, setSelectedFloorId] = useState<string>(FLOORS[0].id);
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
+  const [showCorrectPopup, setShowCorrectPopup] = useState(false);
   // Date.now() seeds the ticking clock; the interval below keeps it live.
   // eslint-disable-next-line react-hooks/purity
   const [now, setNow] = useState(Date.now());
@@ -109,6 +110,12 @@ export default function PlayPage() {
     return () => clearInterval(interval);
   }, [group, event]);
 
+  useEffect(() => {
+    if (!showCorrectPopup) return;
+    const timer = setTimeout(() => setShowCorrectPopup(false), 2000);
+    return () => clearTimeout(timer);
+  }, [showCorrectPopup]);
+
   const allFloors = useMemo(
     () =>
       [...FLOORS.filter((f) => !removedFloorIds.has(f.id)), ...customFloors].sort(
@@ -145,7 +152,10 @@ export default function PlayPage() {
       }),
     });
     const data = await res.json();
-    if (data.correct) setActiveHotspotId(null);
+    if (data.correct) {
+      setActiveHotspotId(null);
+      setShowCorrectPopup(true);
+    }
     return !!data.correct;
   }
 
@@ -173,16 +183,27 @@ export default function PlayPage() {
 
   if (group.finishedAt) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="text-3xl font-bold">Geschafft, {session.groupName}! 🎉</h1>
-        <p className="text-slate-600">Ihr habt alle Rätsel gelöst.</p>
-        <p className="text-5xl font-mono font-bold tabular-nums">
-          {formatDuration(group.totalSeconds ?? elapsedSeconds)}
-        </p>
-        <p className="text-sm text-slate-500">
-          Eure Zeit wurde gespeichert – die Lehrkraft sieht sie live im Ranking.
-        </p>
-      </main>
+      <>
+        <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
+          <h1 className="text-3xl font-bold">Geschafft, {session.groupName}! 🎉</h1>
+          <p className="text-slate-600">Ihr habt alle Rätsel gelöst.</p>
+          <p className="text-5xl font-mono font-bold tabular-nums">
+            {formatDuration(group.totalSeconds ?? elapsedSeconds)}
+          </p>
+          <p className="text-sm text-slate-500">
+            Eure Zeit wurde gespeichert – die Lehrkraft sieht sie live im Ranking.
+          </p>
+        </main>
+
+        {showCorrectPopup && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+            <div className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-600 px-8 py-6 text-center shadow-xl">
+              <p className="text-xl font-bold text-white">Super – eure Antwort war korrekt!</p>
+              <p className="text-lg font-semibold text-white">+ 5 XP</p>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
@@ -269,6 +290,15 @@ export default function PlayPage() {
           onSubmit={handleAnswerSubmit}
           onClose={() => setActiveHotspotId(null)}
         />
+      )}
+
+      {showCorrectPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-600 px-8 py-6 text-center shadow-xl">
+            <p className="text-xl font-bold text-white">Super – eure Antwort war korrekt!</p>
+            <p className="text-lg font-semibold text-white">+ 5 XP</p>
+          </div>
+        </div>
       )}
     </main>
   );
