@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { adminAuth, adminDb } from "@/lib/firebase-admin";
-import { DEFAULT_ORG_ID } from "@/lib/admin-auth";
 import type { AppUser } from "@/lib/types";
 
 // Called once, right after Firebase client-side sign-up, to create this
@@ -32,16 +31,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Konto existiert bereits" }, { status: 409 });
   }
 
-  // Every self-registration joins the default org as a pending member for
-  // now - the real "join existing org / create new org" picker ships in a
-  // later phase, along with auto-approving a new org's founder.
+  // No org yet - the user picks "create new" or "join existing" on
+  // /admin/choose-org after verifying their email.
   const user: AppUser = {
     uid,
     email,
     displayName,
-    orgId: DEFAULT_ORG_ID,
-    orgRole: "member",
-    membershipStatus: "pending",
+    orgId: null,
+    orgRole: null,
+    membershipStatus: "none",
     isSuperAdmin: false,
     createdAt: Date.now(),
     approvedAt: null,

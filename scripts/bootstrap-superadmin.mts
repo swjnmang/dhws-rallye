@@ -1,7 +1,7 @@
 // One-time setup: after you've registered your own account through
-// /admin/register (which lands as a pending "dhws" member like anyone
-// else), run this once to promote that account to an active, org-owning,
-// app-wide super-admin.
+// /admin/register (which lands orgless, on /admin/choose-org), run this
+// once to make that account the active owner of the default "dhws" org and
+// an app-wide super-admin.
 //
 // Usage: npm run migrate:bootstrap-superadmin -- you@example.com
 import { config } from "dotenv";
@@ -38,6 +38,7 @@ async function main() {
 
   await userRef.update({
     isSuperAdmin: true,
+    orgId: "dhws",
     orgRole: "owner",
     membershipStatus: "active",
     approvedAt: Date.now(),

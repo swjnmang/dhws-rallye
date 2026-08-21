@@ -114,9 +114,13 @@ export type Organization = {
 };
 
 export type OrgRole = "owner" | "member";
-export type MembershipStatus = "pending" | "active" | "rejected";
+// "none": not part of any org yet (fresh registration) - shown the
+// choose-org screen. "pending": requested to join an org, waiting on that
+// org's owner. "active": full member, can use the app.
+export type MembershipStatus = "none" | "pending" | "active";
 
-// One doc per Firebase Auth account, doc id === Firebase uid. orgRole is
+// One doc per Firebase Auth account, doc id === Firebase uid. orgId/orgRole
+// are null until the user creates or requests to join an org. orgRole is
 // scoped to this user's own org (an "owner" can approve/manage members of
 // their org); isSuperAdmin is a separate, app-wide flag unrelated to any
 // org, only ever set by the app operator directly in Firestore/the
@@ -126,8 +130,8 @@ export type AppUser = {
   uid: string;
   email: string;
   displayName: string | null;
-  orgId: string;
-  orgRole: OrgRole;
+  orgId: string | null;
+  orgRole: OrgRole | null;
   membershipStatus: MembershipStatus;
   isSuperAdmin: boolean;
   createdAt: number;
