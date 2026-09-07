@@ -113,6 +113,16 @@ export default function SolutionsView({ setId }: { setId: string }) {
               {hotspot.roomName}
             </p>
             <p className="text-sm text-slate-700">{puzzle.question}</p>
+            {puzzle.type === "pdf" && puzzle.documentUrl && (
+              <a
+                href={puzzle.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 w-fit text-sm font-medium text-slate-600 underline hover:text-slate-900"
+              >
+                PDF ansehen
+              </a>
+            )}
             {puzzle.type === "jigsaw" && puzzle.imageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img

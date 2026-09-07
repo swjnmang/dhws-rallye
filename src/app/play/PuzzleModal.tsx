@@ -58,6 +58,17 @@ export default function PuzzleModal({
           />
         )}
 
+        {puzzle.type === "pdf" && puzzle.documentUrl && (
+          <a
+            href={puzzle.documentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-lg font-semibold text-slate-700 transition hover:border-slate-900 hover:bg-slate-50"
+          >
+            PDF öffnen
+          </a>
+        )}
+
         {puzzle.type === "mc" && puzzle.options && (
           <div className="mt-6 flex flex-col gap-3">
             {puzzle.options.map((option, index) => (
@@ -73,7 +84,7 @@ export default function PuzzleModal({
           </div>
         )}
 
-        {puzzle.type === "text" && (
+        {(puzzle.type === "text" || puzzle.type === "pdf") && (
           <form
             onSubmit={(e) => {
               e.preventDefault();

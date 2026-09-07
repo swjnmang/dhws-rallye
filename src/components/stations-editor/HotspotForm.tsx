@@ -46,6 +46,8 @@ export default function HotspotForm({
   );
   const [imageUrl, setImageUrl] = useState<string | null>(existing?.puzzle.imageUrl ?? null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [documentUrl, setDocumentUrl] = useState<string | null>(existing?.puzzle.documentUrl ?? null);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,6 +87,23 @@ export default function HotspotForm({
     setImageUrl(data.url);
   }
 
+  async function handleDocumentChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingDocument(true);
+    setError(null);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/admin/puzzle-images", { method: "POST", body: formData });
+    setUploadingDocument(false);
+    if (!res.ok) {
+      setError("PDF-Upload fehlgeschlagen");
+      return;
+    }
+    const data = await res.json();
+    setDocumentUrl(data.url);
+  }
+
   function updateOption(index: number, value: string) {
     setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
   }
@@ -93,6 +112,10 @@ export default function HotspotForm({
     e.preventDefault();
     if (type === "jigsaw" && !imageUrl) {
       setError("Bitte zuerst ein Bild für das Puzzle hochladen");
+      return;
+    }
+    if (type === "pdf" && !documentUrl) {
+      setError("Bitte zuerst ein PDF hochladen");
       return;
     }
     setSaving(true);
@@ -113,6 +136,8 @@ export default function HotspotForm({
         ? { type, question, correctNumber: Number(correctNumber), points: 1, imageUrl }
         : type === "jigsaw"
         ? { type, question, jigsawSize, points: 1, imageUrl }
+        : type === "pdf"
+        ? { type, question, correctText, points: 1, documentUrl }
         : { type, question, correctText, points: 1, imageUrl };
 
     const positionFields = existing
@@ -235,6 +260,15 @@ export default function HotspotForm({
             >
               Bildpuzzle
             </button>
+            <button
+              type="button"
+              onClick={() => setType("pdf")}
+              className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
+                type === "pdf" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+              }`}
+            >
+              PDF-Dokument
+            </button>
           </div>
         </div>
 
@@ -311,38 +345,71 @@ export default function HotspotForm({
               onChange={(e) => setCorrectText(e.target.value)}
               className="rounded-lg border border-slate-300 px-3 py-2"
             />
+            {type === "pdf" && (
+              <p className="text-xs text-slate-500">
+                Die Gruppe muss diese Antwort im PDF finden und eintippen.
+              </p>
+            )}
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-700">
-            {type === "jigsaw" ? "Puzzle-Bild" : "Bild (optional)"}
-          </label>
-          {imageUrl && (
-            <div className="relative w-fit">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={imageUrl} alt="" className="h-32 rounded-lg border border-slate-200" />
-              <button
-                type="button"
-                onClick={() => setImageUrl(null)}
-                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow"
-                aria-label="Bild entfernen"
+        {type === "pdf" && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">PDF-Dokument</label>
+            {documentUrl && (
+              <a
+                href={documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-fit rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
               >
-                ✕
-              </button>
-            </div>
-          )}
-          <label className="w-fit cursor-pointer rounded-lg border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-500">
-            {uploadingImage ? "Lädt hoch…" : imageUrl ? "Bild ersetzen" : "Bild hochladen"}
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageChange}
-              disabled={uploadingImage}
-            />
-          </label>
-        </div>
+                Aktuelles PDF ansehen
+              </a>
+            )}
+            <label className="w-fit cursor-pointer rounded-lg border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-500">
+              {uploadingDocument ? "Lädt hoch…" : documentUrl ? "PDF ersetzen" : "PDF hochladen"}
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={handleDocumentChange}
+                disabled={uploadingDocument}
+              />
+            </label>
+          </div>
+        )}
+
+        {type !== "pdf" && (
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">
+              {type === "jigsaw" ? "Puzzle-Bild" : "Bild (optional)"}
+            </label>
+            {imageUrl && (
+              <div className="relative w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageUrl} alt="" className="h-32 rounded-lg border border-slate-200" />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl(null)}
+                  className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-xs font-bold text-white shadow"
+                  aria-label="Bild entfernen"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+            <label className="w-fit cursor-pointer rounded-lg border border-dashed border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:border-slate-500">
+              {uploadingImage ? "Lädt hoch…" : imageUrl ? "Bild ersetzen" : "Bild hochladen"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageChange}
+                disabled={uploadingImage}
+              />
+            </label>
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

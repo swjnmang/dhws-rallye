@@ -85,7 +85,7 @@ export type Hotspot = {
   puzzleId: string | null;
 };
 
-export type PuzzleType = "mc" | "text" | "number" | "jigsaw";
+export type PuzzleType = "mc" | "text" | "number" | "jigsaw" | "pdf";
 
 // Public shape - never contains the answer.
 export type Puzzle = {
@@ -102,6 +102,10 @@ export type Puzzle = {
   // tiles are back in their original order, which the client can check
   // itself - so this lives on the public Puzzle doc, not PuzzleAnswer.
   jigsawSize: number | null;
+  // Attached document for a "pdf" puzzle - group reads/downloads it to find
+  // the answer, which is still checked as free text (see PuzzleAnswer),
+  // same as type "text".
+  documentUrl: string | null;
 };
 
 export type PuzzleAnswer = {

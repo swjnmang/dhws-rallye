@@ -87,13 +87,22 @@ export async function PATCH(request: Request, { params }: Params) {
       typeof body.puzzle.imageUrl === "string" && body.puzzle.imageUrl
         ? body.puzzle.imageUrl
         : null;
+    const documentUrl =
+      typeof body.puzzle.documentUrl === "string" && body.puzzle.documentUrl
+        ? body.puzzle.documentUrl
+        : null;
 
     const puzzleId = hotspotData.puzzleId as string;
     const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
     const puzzleSnap = await puzzleRef.get();
-    const previousImageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
+    const previousPuzzle = puzzleSnap.data() as Puzzle | undefined;
+    const previousImageUrl = previousPuzzle?.imageUrl ?? null;
     if (previousImageUrl && previousImageUrl !== imageUrl) {
       await deleteBlobIfUnreferenced("puzzles", "imageUrl", previousImageUrl, puzzleId);
+    }
+    const previousDocumentUrl = previousPuzzle?.documentUrl ?? null;
+    if (previousDocumentUrl && previousDocumentUrl !== documentUrl) {
+      await deleteBlobIfUnreferenced("puzzles", "documentUrl", previousDocumentUrl, puzzleId);
     }
 
     const puzzleUpdate: Partial<Puzzle> = {
@@ -103,6 +112,7 @@ export async function PATCH(request: Request, { params }: Params) {
       points: puzzleInput.points,
       imageUrl,
       jigsawSize: puzzleInput.jigsawSize,
+      documentUrl,
     };
     const answerUpdate: PuzzleAnswer = {
       correctOptionIndex: puzzleInput.correctOptionIndex,
@@ -146,9 +156,12 @@ export async function DELETE(_request: Request, { params }: Params) {
   if (puzzleId) {
     const puzzleRef = adminDb().collection("puzzles").doc(puzzleId);
     const puzzleSnap = await puzzleRef.get();
-    const imageUrl = (puzzleSnap.data() as Puzzle | undefined)?.imageUrl ?? null;
-    if (imageUrl) {
-      await deleteBlobIfUnreferenced("puzzles", "imageUrl", imageUrl, puzzleId);
+    const puzzle = puzzleSnap.data() as Puzzle | undefined;
+    if (puzzle?.imageUrl) {
+      await deleteBlobIfUnreferenced("puzzles", "imageUrl", puzzle.imageUrl, puzzleId);
+    }
+    if (puzzle?.documentUrl) {
+      await deleteBlobIfUnreferenced("puzzles", "documentUrl", puzzle.documentUrl, puzzleId);
     }
     batch.delete(puzzleRef);
     batch.delete(adminDb().collection("puzzleAnswers").doc(puzzleId));

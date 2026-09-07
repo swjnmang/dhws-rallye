@@ -32,6 +32,10 @@ export async function POST(request: Request) {
   const puzzleInput = validatePuzzleInput(body?.puzzle);
   const imageUrl =
     typeof body?.puzzle?.imageUrl === "string" && body.puzzle.imageUrl ? body.puzzle.imageUrl : null;
+  const documentUrl =
+    typeof body?.puzzle?.documentUrl === "string" && body.puzzle.documentUrl
+      ? body.puzzle.documentUrl
+      : null;
 
   const hasImagePosition = xPct !== null && yPct !== null;
   const hasMapPosition = lat !== null && lng !== null && radiusMeters !== null;
@@ -75,6 +79,7 @@ export async function POST(request: Request) {
     points: puzzleInput.points,
     imageUrl,
     jigsawSize: puzzleInput.jigsawSize,
+    documentUrl,
   };
   const answer: PuzzleAnswer = {
     correctOptionIndex: puzzleInput.correctOptionIndex,

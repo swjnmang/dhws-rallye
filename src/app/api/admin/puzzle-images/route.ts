@@ -18,15 +18,21 @@ export async function POST(request: Request) {
   const formData = await request.formData();
   const file = formData.get("file");
 
-  if (!(file instanceof File) || !file.type.startsWith("image/")) {
-    return NextResponse.json({ error: "Kein gültiges Bild" }, { status: 400 });
+  const isImage = file instanceof File && file.type.startsWith("image/");
+  const isPdf = file instanceof File && file.type === "application/pdf";
+  if (!(file instanceof File) || !(isImage || isPdf)) {
+    return NextResponse.json({ error: "Kein gültiges Bild oder PDF" }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "Bild ist zu groß (max. 8 MB)" }, { status: 413 });
+    return NextResponse.json(
+      { error: `${isPdf ? "PDF" : "Bild"} ist zu groß (max. 8 MB)` },
+      { status: 413 }
+    );
   }
 
-  const extension = file.name.split(".").pop() || "jpg";
-  const blob = await put(`puzzle-images/${generateId()}.${extension}`, file, {
+  const extension = isPdf ? "pdf" : file.name.split(".").pop() || "jpg";
+  const folder = isPdf ? "puzzle-documents" : "puzzle-images";
+  const blob = await put(`${folder}/${generateId()}.${extension}`, file, {
     access: "public",
   });
 

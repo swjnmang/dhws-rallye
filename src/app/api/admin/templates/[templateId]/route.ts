@@ -42,6 +42,12 @@ export async function DELETE(_request: Request, { params }: Params) {
       const imageUrl = (d.data() as Puzzle).imageUrl;
       return imageUrl ? deleteBlobIfUnreferenced("puzzles", "imageUrl", imageUrl, d.id) : Promise.resolve();
     }),
+    ...puzzlesSnap.docs.map((d) => {
+      const documentUrl = (d.data() as Puzzle).documentUrl;
+      return documentUrl
+        ? deleteBlobIfUnreferenced("puzzles", "documentUrl", documentUrl, d.id)
+        : Promise.resolve();
+    }),
     ...floorsSnap.docs.map((d) => {
       const imagePath = (d.data() as CustomFloor).imagePath;
       return imagePath ? deleteBlobIfUnreferenced("floors", "imagePath", imagePath, d.id) : Promise.resolve();

@@ -1,5 +1,5 @@
 export type PuzzleInput = {
-  type: "mc" | "text" | "number" | "jigsaw";
+  type: "mc" | "text" | "number" | "jigsaw" | "pdf";
   question: string;
   options: string[] | null;
   points: number;
@@ -14,7 +14,13 @@ const MAX_JIGSAW_SIZE = 5;
 
 export function validatePuzzleInput(body: unknown): PuzzleInput | null {
   const b = body as Record<string, unknown>;
-  if (b?.type !== "mc" && b?.type !== "text" && b?.type !== "number" && b?.type !== "jigsaw") {
+  if (
+    b?.type !== "mc" &&
+    b?.type !== "text" &&
+    b?.type !== "number" &&
+    b?.type !== "jigsaw" &&
+    b?.type !== "pdf"
+  ) {
     return null;
   }
   if (typeof b.question !== "string" || !b.question.trim()) return null;
@@ -68,9 +74,12 @@ export function validatePuzzleInput(body: unknown): PuzzleInput | null {
     };
   }
 
+  // "text" and "pdf" both need a free-text answer the group types in - the
+  // PDF is just the medium the answer is hidden in, checked the same way.
+  if (b.type === "pdf" && (typeof b.documentUrl !== "string" || !b.documentUrl)) return null;
   if (typeof b.correctText !== "string" || !b.correctText.trim()) return null;
   return {
-    type: "text",
+    type: b.type,
     question: b.question.trim(),
     options: null,
     points,

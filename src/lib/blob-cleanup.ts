@@ -8,7 +8,7 @@ import { adminDb } from "@/lib/firebase-admin";
 // event/template cloned from the same source.
 export async function deleteBlobIfUnreferenced(
   collection: "puzzles" | "floors",
-  field: "imageUrl" | "imagePath",
+  field: "imageUrl" | "imagePath" | "documentUrl",
   url: string,
   excludeDocId: string
 ): Promise<void> {
