@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireVerifiedUser, AdminAuthError } from "@/lib/admin-auth";
+import { requireVerifiedUser, requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { generateId } from "@/lib/codes";
 import { cloneStations } from "@/lib/clone-stations";
@@ -106,4 +106,30 @@ export async function POST(request: Request) {
   await seedExampleTemplate(id);
 
   return NextResponse.json({ org });
+}
+
+// Renames the caller's own org - owner only.
+export async function PATCH(request: Request) {
+  let admin;
+  try {
+    admin = await requireAdmin();
+  } catch (e) {
+    if (e instanceof AdminAuthError) {
+      return NextResponse.json({ error: "Nicht angemeldet" }, { status: 401 });
+    }
+    throw e;
+  }
+  if (admin.orgRole !== "owner" || !admin.orgId) {
+    return NextResponse.json({ error: "Nur der Organisations-Owner darf das" }, { status: 403 });
+  }
+
+  const body = await request.json().catch(() => null);
+  const name = typeof body?.name === "string" ? body.name.trim() : "";
+  if (!name) {
+    return NextResponse.json({ error: "Name fehlt" }, { status: 400 });
+  }
+
+  await adminDb().collection("organizations").doc(admin.orgId).set({ name }, { merge: true });
+
+  return NextResponse.json({ ok: true });
 }

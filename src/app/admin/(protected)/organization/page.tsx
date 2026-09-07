@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import AdminHeader from "@/app/admin/AdminHeader";
-import type { AppUser, MembershipStatus, OrgRole } from "@/lib/types";
+import type { AppUser, MembershipStatus, OrgInvite, OrgRole } from "@/lib/types";
 
 type Me = {
+  uid: string;
   orgName: string | null;
   orgRole: OrgRole | null;
   membershipStatus: MembershipStatus;
@@ -18,14 +19,29 @@ export default function OrganizationPage() {
   const [orgs, setOrgs] = useState<OrgOption[] | null>(null);
   const [newOrgName, setNewOrgName] = useState("");
   const [members, setMembers] = useState<AppUser[] | null>(null);
+  const [invites, setInvites] = useState<OrgInvite[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [busyUid, setBusyUid] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [orgNameDraft, setOrgNameDraft] = useState("");
+  const [savingOrgName, setSavingOrgName] = useState(false);
+  const [orgNameSaved, setOrgNameSaved] = useState(false);
+
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitingBusy, setInvitingBusy] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
+
   function loadMe() {
     fetch("/api/admin/me")
       .then((res) => res.json())
-      .then((data) => setMe(data));
+      .then((data) => {
+        setMe(data);
+        if (data.membershipStatus === "active" && data.orgRole === "owner") {
+          setOrgNameDraft(data.orgName ?? "");
+        }
+      });
   }
 
   function loadMembers() {
@@ -34,10 +50,19 @@ export default function OrganizationPage() {
       .then((data) => setMembers(data.members ?? []));
   }
 
+  function loadInvites() {
+    fetch("/api/admin/invites")
+      .then((res) => (res.ok ? res.json() : { invites: [] }))
+      .then((data) => setInvites(data.invites ?? []));
+  }
+
   useEffect(loadMe, []);
 
   useEffect(() => {
-    if (me?.membershipStatus === "active" && me.orgRole === "owner") loadMembers();
+    if (me?.membershipStatus === "active" && me.orgRole === "owner") {
+      loadMembers();
+      loadInvites();
+    }
   }, [me]);
 
   useEffect(() => {
@@ -91,15 +116,77 @@ export default function OrganizationPage() {
     loadMe();
   }
 
-  async function handleMemberAction(uid: string, action: "approve" | "reject") {
+  async function handleMemberAction(
+    uid: string,
+    action: "approve" | "reject" | "promote" | "demote" | "remove"
+  ) {
     setBusyUid(uid);
-    await fetch(`/api/admin/members/${uid}`, {
+    const res = await fetch(`/api/admin/members/${uid}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action }),
     });
     setBusyUid(null);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error ?? "Aktion fehlgeschlagen");
+    }
     loadMembers();
+  }
+
+  async function handleSaveOrgName(e: React.FormEvent) {
+    e.preventDefault();
+    if (!orgNameDraft.trim()) return;
+    setSavingOrgName(true);
+    setOrgNameSaved(false);
+    const res = await fetch("/api/orgs", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: orgNameDraft.trim() }),
+    });
+    setSavingOrgName(false);
+    if (res.ok) {
+      setOrgNameSaved(true);
+      loadMe();
+    }
+  }
+
+  async function handleCreateInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) {
+      setInviteError("Bitte eine E-Mail-Adresse eingeben.");
+      return;
+    }
+    setInvitingBusy(true);
+    setInviteError(null);
+    const res = await fetch("/api/admin/invites", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: inviteEmail.trim() }),
+    });
+    setInvitingBusy(false);
+    if (!res.ok) {
+      setInviteError("Einladung konnte nicht erstellt werden.");
+      return;
+    }
+    const data = await res.json();
+    setInviteEmail("");
+    loadInvites();
+    navigator.clipboard?.writeText(data.url).catch(() => {});
+    setCopiedInviteId(data.invite.id);
+    setTimeout(() => setCopiedInviteId(null), 3000);
+  }
+
+  async function handleCopyInvite(invite: OrgInvite) {
+    const url = `${window.location.origin}/admin/register?invite=${invite.id}`;
+    await navigator.clipboard?.writeText(url).catch(() => {});
+    setCopiedInviteId(invite.id);
+    setTimeout(() => setCopiedInviteId(null), 3000);
+  }
+
+  async function handleRevokeInvite(inviteId: string) {
+    await fetch(`/api/admin/invites/${inviteId}`, { method: "DELETE" });
+    loadInvites();
   }
 
   const pending = members?.filter((m) => m.membershipStatus === "pending") ?? [];
@@ -233,9 +320,27 @@ export default function OrganizationPage() {
 
         {me?.membershipStatus === "active" && me.orgRole === "owner" && (
           <div className="flex flex-col gap-8">
-            <p className="text-center text-slate-600">
-              Du bist Owner von <span className="font-semibold">{me.orgName}</span>.
-            </p>
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold text-slate-900">Organisation</h2>
+              <form onSubmit={handleSaveOrgName} className="flex gap-2">
+                <input
+                  value={orgNameDraft}
+                  onChange={(e) => {
+                    setOrgNameDraft(e.target.value);
+                    setOrgNameSaved(false);
+                  }}
+                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2"
+                />
+                <button
+                  type="submit"
+                  disabled={savingOrgName || !orgNameDraft.trim()}
+                  className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+                >
+                  {savingOrgName ? "Speichert…" : "Speichern"}
+                </button>
+              </form>
+              {orgNameSaved && <p className="text-sm text-emerald-700">Gespeichert.</p>}
+            </section>
 
             <section className="flex flex-col gap-3">
               <h2 className="text-lg font-bold text-slate-900">
@@ -287,11 +392,93 @@ export default function OrganizationPage() {
                       <p className="font-medium text-slate-800">{m.displayName ?? m.email}</p>
                       <p className="text-sm text-slate-500">{m.email}</p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                      {m.orgRole === "owner" ? "Owner" : "Mitglied"}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                        {m.orgRole === "owner" ? "Owner" : "Mitglied"}
+                      </span>
+                      {m.uid !== me.uid && (
+                        <>
+                          <button
+                            disabled={busyUid === m.uid}
+                            onClick={() =>
+                              handleMemberAction(m.uid, m.orgRole === "owner" ? "demote" : "promote")
+                            }
+                            className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline disabled:opacity-50"
+                          >
+                            {m.orgRole === "owner" ? "Zum Mitglied machen" : "Zum Owner machen"}
+                          </button>
+                          <button
+                            disabled={busyUid === m.uid}
+                            onClick={() => {
+                              if (confirm(`"${m.displayName ?? m.email}" aus der Organisation entfernen?`)) {
+                                handleMemberAction(m.uid, "remove");
+                              }
+                            }}
+                            className="text-sm font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                          >
+                            Entfernen
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </li>
                 ))}
+              </ul>
+            </section>
+
+            <section className="flex flex-col gap-3">
+              <h2 className="text-lg font-bold text-slate-900">Mitglied einladen</h2>
+              <form onSubmit={handleCreateInvite} className="flex gap-2">
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => {
+                    setInviteEmail(e.target.value);
+                    if (inviteError) setInviteError(null);
+                  }}
+                  placeholder="E-Mail-Adresse"
+                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2"
+                />
+                <button
+                  type="submit"
+                  disabled={invitingBusy}
+                  className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+                >
+                  {invitingBusy ? "Erstellt…" : "Einladen"}
+                </button>
+              </form>
+              {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
+              <p className="text-xs text-slate-500">
+                Es wird noch keine E-Mail verschickt – der Einladungslink wird nach dem Erstellen
+                automatisch kopiert, damit du ihn selbst weitergeben kannst.
+              </p>
+
+              <ul className="flex flex-col gap-2">
+                {(invites ?? []).map((invite) => (
+                  <li
+                    key={invite.id}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                  >
+                    <span className="text-sm text-slate-700">{invite.email}</span>
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={() => handleCopyInvite(invite)}
+                        className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+                      >
+                        {copiedInviteId === invite.id ? "Kopiert!" : "Link kopieren"}
+                      </button>
+                      <button
+                        onClick={() => handleRevokeInvite(invite.id)}
+                        className="text-sm font-medium text-red-600 hover:text-red-800"
+                      >
+                        Zurückziehen
+                      </button>
+                    </div>
+                  </li>
+                ))}
+                {invites !== null && invites.length === 0 && (
+                  <p className="text-center text-sm text-slate-400">Keine offenen Einladungen.</p>
+                )}
               </ul>
             </section>
           </div>

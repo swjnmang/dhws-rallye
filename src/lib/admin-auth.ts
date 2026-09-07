@@ -32,8 +32,25 @@ export type VerifiedIdentity = {
   email: string;
 };
 
-// Verifies the session cookie and that the email is confirmed - the bare
-// minimum to act as yourself. Throws AdminAuthError otherwise.
+// Verifies just the session cookie itself, regardless of email-verified
+// status - for the handful of actions (e.g. accepting an org invite) that
+// need to run at registration time, before the verification email has even
+// been clicked. Throws AdminAuthError otherwise.
+export async function requireSession(): Promise<VerifiedIdentity> {
+  const cookieStore = await cookies();
+  const sessionCookie = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+  if (!sessionCookie) throw new AdminAuthError();
+
+  try {
+    const decoded = await adminAuth().verifySessionCookie(sessionCookie, true);
+    return { uid: decoded.uid, email: decoded.email ?? "" };
+  } catch {
+    throw new AdminAuthError();
+  }
+}
+
+// Same as requireSession, plus requires the email to be confirmed - the
+// bare minimum to act as yourself for everything else.
 export async function requireVerifiedUser(): Promise<VerifiedIdentity> {
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
