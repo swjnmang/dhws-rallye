@@ -1,12 +1,14 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { collection, doc, onSnapshot } from "firebase/firestore";
+import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import QRCode from "qrcode";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "@/app/admin/AdminHeader";
+import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
 import { canFinishEvent } from "@/lib/permissions";
+import { formatDuration } from "@/lib/format";
 import type { RallyEvent, EventStatus, Group } from "@/lib/types";
 
 export default function EventOverviewPage({
@@ -17,12 +19,22 @@ export default function EventOverviewPage({
   const { eventId } = use(params);
   const [event, setEvent] = useState<RallyEvent | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
+  const [puzzleCount, setPuzzleCount] = useState(0);
   const [joinInfo, setJoinInfo] = useState<{ url: string; qrDataUrl: string } | null>(null);
   const [updating, setUpdating] = useState(false);
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
+  const [removingGroup, setRemovingGroup] = useState<Group | null>(null);
+  const [showAddGroup, setShowAddGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState("");
+  const [newGroupClass, setNewGroupClass] = useState("");
+  const [addingGroup, setAddingGroup] = useState(false);
+  const [addGroupError, setAddGroupError] = useState<string | null>(null);
+  // Date.now() seeds the ticking clock; the interval below keeps it live.
+  // eslint-disable-next-line react-hooks/purity
+  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     return onSnapshot(doc(db, "events", eventId), (snap) => {
@@ -44,6 +56,11 @@ export default function EventOverviewPage({
   }, [eventId]);
 
   useEffect(() => {
+    const q = query(collection(db, "puzzles"), where("setId", "==", eventId));
+    return onSnapshot(q, (snap) => setPuzzleCount(snap.docs.length));
+  }, [eventId]);
+
+  useEffect(() => {
     fetch("/api/admin/events/close-stale", { method: "POST" }).catch(() => {});
   }, [eventId]);
 
@@ -58,6 +75,27 @@ export default function EventOverviewPage({
       cancelled = true;
     };
   }, [event]);
+
+  // Only needed while the live group list (below) is ticking.
+  useEffect(() => {
+    if (event?.status === "draft") return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [event?.status]);
+
+  const sortedGroups = useMemo(() => {
+    return [...groups].sort((a, b) => {
+      const aFinished = a.finishedAt != null;
+      const bFinished = b.finishedAt != null;
+      if (aFinished && bFinished) return (a.totalSeconds ?? 0) - (b.totalSeconds ?? 0);
+      if (aFinished) return -1;
+      if (bFinished) return 1;
+      const aSolved = Object.keys(a.solved).length;
+      const bSolved = Object.keys(b.solved).length;
+      if (aSolved !== bSolved) return bSolved - aSolved;
+      return a.joinedAt - b.joinedAt;
+    });
+  }, [groups]);
 
   async function updateStatus(status: EventStatus) {
     setUpdating(true);
@@ -100,6 +138,35 @@ export default function EventOverviewPage({
     await updateStatus("active");
   }
 
+  async function handleRemoveGroup() {
+    if (!removingGroup) return;
+    await fetch(`/api/admin/events/${eventId}/groups/${removingGroup.id}`, { method: "DELETE" });
+    setRemovingGroup(null);
+  }
+
+  async function handleAddGroup(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newGroupName.trim() || !newGroupClass.trim()) {
+      setAddGroupError("Bitte Gruppenname und Klasse eingeben.");
+      return;
+    }
+    setAddingGroup(true);
+    setAddGroupError(null);
+    const res = await fetch(`/api/admin/events/${eventId}/groups`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupName: newGroupName.trim(), className: newGroupClass.trim() }),
+    });
+    setAddingGroup(false);
+    if (!res.ok) {
+      setAddGroupError("Gruppe konnte nicht hinzugefügt werden.");
+      return;
+    }
+    setNewGroupName("");
+    setNewGroupClass("");
+    setShowAddGroup(false);
+  }
+
   if (!event) {
     return (
       <>
@@ -108,6 +175,8 @@ export default function EventOverviewPage({
       </>
     );
   }
+
+  const isDraft = event.status === "draft";
 
   return (
     <>
@@ -156,17 +225,19 @@ export default function EventOverviewPage({
           </div>
         </section>
 
-        <section className="flex flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Beitritts-Code</p>
-          <p className="font-mono text-4xl font-bold tracking-widest">{event.joinCode}</p>
-          {joinInfo && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={joinInfo.qrDataUrl} alt="QR-Code zum Beitreten" className="h-48 w-48" />
-          )}
-          <p className="break-all text-sm text-slate-500">{joinInfo?.url}</p>
-        </section>
+        {isDraft && (
+          <section className="flex flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
+            <p className="text-sm font-medium text-slate-500">Beitritts-Code</p>
+            <p className="font-mono text-4xl font-bold tracking-widest">{event.joinCode}</p>
+            {joinInfo && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={joinInfo.qrDataUrl} alt="QR-Code zum Beitreten" className="h-48 w-48" />
+            )}
+            <p className="break-all text-sm text-slate-500">{joinInfo?.url}</p>
+          </section>
+        )}
 
-        {event.status === "draft" && (
+        {isDraft && (
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <p className="text-sm font-medium text-slate-500">
               Lobby ({groups.length} {groups.length === 1 ? "Gruppe" : "Gruppen"} bereit)
@@ -191,12 +262,105 @@ export default function EventOverviewPage({
           </section>
         )}
 
+        {!isDraft && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-slate-500">
+                Gruppen ({sortedGroups.length})
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAddGroup((v) => !v)}
+                className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
+              >
+                {showAddGroup ? "Abbrechen" : "+ Gruppe hinzufügen"}
+              </button>
+            </div>
+
+            {showAddGroup && (
+              <form onSubmit={handleAddGroup} className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <input
+                  autoFocus
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  placeholder="Gruppenname"
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+                <input
+                  value={newGroupClass}
+                  onChange={(e) => setNewGroupClass(e.target.value)}
+                  placeholder="Klasse"
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+                <button
+                  type="submit"
+                  disabled={addingGroup}
+                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  {addingGroup ? "Fügt hinzu…" : "Hinzufügen"}
+                </button>
+              </form>
+            )}
+            {addGroupError && <p className="mt-2 text-sm text-red-600">{addGroupError}</p>}
+
+            {sortedGroups.length === 0 ? (
+              <p className="mt-3 text-sm text-slate-400">Noch keine Gruppen beigetreten.</p>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-2">
+                {sortedGroups.map((group, index) => {
+                  const solvedCount = Object.keys(group.solved).length;
+                  const elapsed = group.finishedAt
+                    ? group.totalSeconds ?? 0
+                    : event.startedAt
+                    ? (now - event.startedAt) / 1000
+                    : 0;
+                  return (
+                    <li
+                      key={group.id}
+                      className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
+                        group.finishedAt
+                          ? "border-emerald-300 bg-emerald-50"
+                          : "border-slate-200 bg-slate-50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="w-5 text-sm font-bold text-slate-400">{index + 1}</span>
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {group.name}{" "}
+                            <span className="font-normal text-slate-400">· {group.className}</span>
+                          </p>
+                          <p className="text-sm text-slate-500">
+                            {solvedCount} / {puzzleCount} Rätsel
+                            {group.finishedAt && " — fertig"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="font-mono text-lg font-bold tabular-nums">
+                          {formatDuration(elapsed)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setRemovingGroup(group)}
+                          className="text-sm font-medium text-red-600 hover:text-red-800"
+                          aria-label={`${group.name} entfernen`}
+                        >
+                          Entfernen
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        )}
+
         <section
-          className={`grid grid-cols-1 gap-3 ${
-            event.status === "draft" ? "sm:grid-cols-4" : "sm:grid-cols-3"
-          }`}
+          className={`grid grid-cols-1 gap-3 ${isDraft ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}
         >
-          {event.status === "draft" && (
+          {isDraft && (
             <Link
               href={`/admin/events/${eventId}/stations`}
               className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
@@ -209,12 +373,6 @@ export default function EventOverviewPage({
             className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
           >
             Lösungen anzeigen
-          </Link>
-          <Link
-            href={`/admin/events/${eventId}/live`}
-            className="rounded-xl border border-slate-200 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm hover:border-slate-400"
-          >
-            Live-Übersicht
           </Link>
           <Link
             href={`/admin/events/${eventId}/results`}
@@ -267,6 +425,15 @@ export default function EventOverviewPage({
             </div>
           </div>
         </div>
+      )}
+
+      {removingGroup && (
+        <ConfirmDeleteByName
+          itemLabel="Gruppe"
+          itemName={removingGroup.name}
+          onConfirm={handleRemoveGroup}
+          onClose={() => setRemovingGroup(null)}
+        />
       )}
     </>
   );
