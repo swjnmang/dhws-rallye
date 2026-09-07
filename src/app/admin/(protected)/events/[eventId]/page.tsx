@@ -27,11 +27,6 @@ export default function EventOverviewPage({
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
   const [removingGroup, setRemovingGroup] = useState<Group | null>(null);
-  const [showAddGroup, setShowAddGroup] = useState(false);
-  const [newGroupName, setNewGroupName] = useState("");
-  const [newGroupClass, setNewGroupClass] = useState("");
-  const [addingGroup, setAddingGroup] = useState(false);
-  const [addGroupError, setAddGroupError] = useState<string | null>(null);
   // Date.now() seeds the ticking clock; the interval below keeps it live.
   // eslint-disable-next-line react-hooks/purity
   const [now, setNow] = useState(Date.now());
@@ -144,29 +139,6 @@ export default function EventOverviewPage({
     setRemovingGroup(null);
   }
 
-  async function handleAddGroup(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newGroupName.trim() || !newGroupClass.trim()) {
-      setAddGroupError("Bitte Gruppenname und Klasse eingeben.");
-      return;
-    }
-    setAddingGroup(true);
-    setAddGroupError(null);
-    const res = await fetch(`/api/admin/events/${eventId}/groups`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupName: newGroupName.trim(), className: newGroupClass.trim() }),
-    });
-    setAddingGroup(false);
-    if (!res.ok) {
-      setAddGroupError("Gruppe konnte nicht hinzugefügt werden.");
-      return;
-    }
-    setNewGroupName("");
-    setNewGroupClass("");
-    setShowAddGroup(false);
-  }
-
   if (!event) {
     return (
       <>
@@ -264,44 +236,7 @@ export default function EventOverviewPage({
 
         {!isDraft && (
           <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-slate-500">
-                Gruppen ({sortedGroups.length})
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowAddGroup((v) => !v)}
-                className="text-sm font-medium text-slate-600 hover:text-slate-900 hover:underline"
-              >
-                {showAddGroup ? "Abbrechen" : "+ Gruppe hinzufügen"}
-              </button>
-            </div>
-
-            {showAddGroup && (
-              <form onSubmit={handleAddGroup} className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <input
-                  autoFocus
-                  value={newGroupName}
-                  onChange={(e) => setNewGroupName(e.target.value)}
-                  placeholder="Gruppenname"
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-                <input
-                  value={newGroupClass}
-                  onChange={(e) => setNewGroupClass(e.target.value)}
-                  placeholder="Klasse"
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-                <button
-                  type="submit"
-                  disabled={addingGroup}
-                  className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-                >
-                  {addingGroup ? "Fügt hinzu…" : "Hinzufügen"}
-                </button>
-              </form>
-            )}
-            {addGroupError && <p className="mt-2 text-sm text-red-600">{addGroupError}</p>}
+            <p className="text-sm font-medium text-slate-500">Gruppen ({sortedGroups.length})</p>
 
             {sortedGroups.length === 0 ? (
               <p className="mt-3 text-sm text-slate-400">Noch keine Gruppen beigetreten.</p>
