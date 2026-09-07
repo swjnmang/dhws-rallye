@@ -28,7 +28,6 @@ export default function OrganizationPage() {
   const [savingOrgName, setSavingOrgName] = useState(false);
   const [orgNameSaved, setOrgNameSaved] = useState(false);
 
-  const [inviteEmail, setInviteEmail] = useState("");
   const [invitingBusy, setInvitingBusy] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
@@ -151,26 +150,16 @@ export default function OrganizationPage() {
     }
   }
 
-  async function handleCreateInvite(e: React.FormEvent) {
-    e.preventDefault();
-    if (!inviteEmail.trim()) {
-      setInviteError("Bitte eine E-Mail-Adresse eingeben.");
-      return;
-    }
+  async function handleCreateInvite() {
     setInvitingBusy(true);
     setInviteError(null);
-    const res = await fetch("/api/admin/invites", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: inviteEmail.trim() }),
-    });
+    const res = await fetch("/api/admin/invites", { method: "POST" });
     setInvitingBusy(false);
     if (!res.ok) {
-      setInviteError("Einladung konnte nicht erstellt werden.");
+      setInviteError("Link konnte nicht erstellt werden.");
       return;
     }
     const data = await res.json();
-    setInviteEmail("");
     loadInvites();
     navigator.clipboard?.writeText(data.url).catch(() => {});
     setCopiedInviteId(data.invite.id);
@@ -427,31 +416,21 @@ export default function OrganizationPage() {
             </section>
 
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-bold text-slate-900">Mitglied einladen</h2>
-              <form onSubmit={handleCreateInvite} className="flex gap-2">
-                <input
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => {
-                    setInviteEmail(e.target.value);
-                    if (inviteError) setInviteError(null);
-                  }}
-                  placeholder="E-Mail-Adresse"
-                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2"
-                />
-                <button
-                  type="submit"
-                  disabled={invitingBusy}
-                  className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
-                >
-                  {invitingBusy ? "Erstellt…" : "Einladen"}
-                </button>
-              </form>
-              {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
+              <h2 className="text-lg font-bold text-slate-900">Einladungslinks</h2>
               <p className="text-xs text-slate-500">
-                Es wird noch keine E-Mail verschickt – der Einladungslink wird nach dem Erstellen
-                automatisch kopiert, damit du ihn selbst weitergeben kannst.
+                Erstellt einen Link, über den jemand direkt als Mitglied beitritt, ohne Freigabe
+                abzuwarten. Es wird keine E-Mail verschickt – der Link wird kopiert, damit du ihn
+                selbst weitergeben kannst (per Mail, Chat o. Ä.).
               </p>
+              <button
+                type="button"
+                onClick={handleCreateInvite}
+                disabled={invitingBusy}
+                className="self-start rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-50"
+              >
+                {invitingBusy ? "Erstellt…" : "Neuen Link erstellen"}
+              </button>
+              {inviteError && <p className="text-sm text-red-600">{inviteError}</p>}
 
               <ul className="flex flex-col gap-2">
                 {(invites ?? []).map((invite) => (
@@ -459,7 +438,14 @@ export default function OrganizationPage() {
                     key={invite.id}
                     className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
                   >
-                    <span className="text-sm text-slate-700">{invite.email}</span>
+                    <span className="text-sm text-slate-700">
+                      Erstellt am{" "}
+                      {new Date(invite.createdAt).toLocaleDateString("de-DE", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </span>
                     <div className="flex items-center gap-4">
                       <button
                         onClick={() => handleCopyInvite(invite)}
@@ -477,7 +463,7 @@ export default function OrganizationPage() {
                   </li>
                 ))}
                 {invites !== null && invites.length === 0 && (
-                  <p className="text-center text-sm text-slate-400">Keine offenen Einladungen.</p>
+                  <p className="text-center text-sm text-slate-400">Keine aktiven Einladungslinks.</p>
                 )}
               </ul>
             </section>

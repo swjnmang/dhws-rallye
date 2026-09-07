@@ -156,14 +156,13 @@ export type AppUser = {
   approvedByUid: string | null;
 };
 
-// A shareable link an org owner hands out directly (no automatic email
-// sending yet) so the recipient joins as an active member immediately on
-// registration/login, skipping the normal request-and-approve flow. The id
-// doubles as the unguessable token in the invite URL.
+// A shareable link an org owner generates and hands out themselves (no
+// automatic email sending) so the recipient joins as an active member
+// immediately on registration/login, skipping the normal request-and-
+// approve flow. The id doubles as the unguessable token in the invite URL.
 export type OrgInvite = {
   id: string;
   orgId: string;
-  email: string;
   createdByUid: string;
   createdAt: number;
   status: "pending" | "accepted" | "revoked";

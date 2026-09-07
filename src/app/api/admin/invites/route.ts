@@ -49,17 +49,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Nur der Organisations-Owner darf das" }, { status: 403 });
   }
 
-  const body = await request.json().catch(() => null);
-  const email = typeof body?.email === "string" ? body.email.trim() : "";
-  if (!email) {
-    return NextResponse.json({ error: "E-Mail-Adresse fehlt" }, { status: 400 });
-  }
-
   const id = generateId();
   const invite: OrgInvite = {
     id,
     orgId: admin.orgId,
-    email,
     createdByUid: admin.uid,
     createdAt: Date.now(),
     status: "pending",
