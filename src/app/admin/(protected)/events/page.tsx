@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { collection, onSnapshot, orderBy, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "@/app/admin/AdminHeader";
 import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
@@ -52,17 +52,25 @@ export default function AdminEventsPage() {
 
   useEffect(() => {
     if (!orgId) return;
-    const q = query(collection(db, "events"), where("orgId", "==", orgId), orderBy("createdAt", "desc"));
+    // Sorted client-side rather than via orderBy() - combined with the
+    // orgId equality filter, that needs a composite index this project
+    // doesn't have, which fails the whole query silently (onSnapshot's
+    // error callback isn't wired up, so it just never fires again).
+    const q = query(collection(db, "events"), where("orgId", "==", orgId));
     return onSnapshot(q, (snap) => {
-      setEvents(snap.docs.map((d) => d.data() as RallyEvent));
+      const docs = snap.docs.map((d) => d.data() as RallyEvent);
+      docs.sort((a, b) => b.createdAt - a.createdAt);
+      setEvents(docs);
     });
   }, [orgId]);
 
   useEffect(() => {
     if (!orgId) return;
-    const q = query(collection(db, "templates"), where("orgId", "==", orgId), orderBy("createdAt", "desc"));
+    const q = query(collection(db, "templates"), where("orgId", "==", orgId));
     return onSnapshot(q, (snap) => {
-      setTemplates(snap.docs.map((d) => d.data() as Template));
+      const docs = snap.docs.map((d) => d.data() as Template);
+      docs.sort((a, b) => b.createdAt - a.createdAt);
+      setTemplates(docs);
     });
   }, [orgId]);
 
