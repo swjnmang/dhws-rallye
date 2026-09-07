@@ -47,6 +47,26 @@ export default function PlayPage() {
     }
   }, [session, router]);
 
+  // A back-button press (accidental or not) shouldn't silently drop a group
+  // out of the game - their session/progress is untouched either way, but
+  // without this it just lands them on a blank join form that looks like
+  // they got kicked out. Intercept it with a confirmation instead; "leave"
+  // still goes to /join, which itself offers a "Zurück zum Spiel" button
+  // for exactly this session.
+  useEffect(() => {
+    if (!session) return;
+    window.history.pushState(null, "", window.location.href);
+    function handlePopState() {
+      window.history.pushState(null, "", window.location.href);
+      const leave = window.confirm(
+        "Wollt ihr das Spiel wirklich verlassen? Ihr könnt jederzeit wieder einsteigen."
+      );
+      if (leave) router.push("/join");
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [session, router]);
+
   useEffect(() => {
     if (!session) return;
     const eventRef = doc(db, "events", session.eventId);
