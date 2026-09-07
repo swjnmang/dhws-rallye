@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Schulhaus-Rallye",
-  description: "Digitale Schulhaus-Rallye zum Schuljahresstart",
+  title: "My Rallye",
+  description: "Erstelle eigene Rallyes mit individuellen Karten und Rätseln.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
