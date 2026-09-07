@@ -6,6 +6,9 @@ export type GroupSession = {
   groupName: string;
   className: string;
   eventName: string;
+  // Whether this group has already confirmed the pre-game "Los geht's"
+  // explanation screen - shown once per join, not on every page load.
+  introSeen?: boolean;
 };
 
 export function saveGroupSession(session: GroupSession) {

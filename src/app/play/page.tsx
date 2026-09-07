@@ -4,8 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
-import { getGroupSession, clearGroupSession, type GroupSession } from "@/lib/session";
+import { getGroupSession, saveGroupSession, clearGroupSession, type GroupSession } from "@/lib/session";
 import { formatDuration } from "@/lib/format";
+import { sortGroupsByRank } from "@/lib/group-ranking";
 import { FLOORS } from "@/lib/floors";
 import PuzzleModal from "./PuzzleModal";
 import PlayMapView from "./PlayMapView";
@@ -21,6 +22,7 @@ export default function PlayPage() {
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
   const [puzzles, setPuzzles] = useState<Record<string, Puzzle>>({});
   const [group, setGroup] = useState<Group | null>(null);
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(
     null
   );
@@ -124,6 +126,14 @@ export default function PlayPage() {
     return unsub;
   }, [session]);
 
+  // Every group in the event, needed for the end-of-rally leaderboard (which
+  // ranks all groups, not just this one).
+  useEffect(() => {
+    if (!session) return;
+    const groupsRef = collection(db, "events", session.eventId, "groups");
+    return onSnapshot(groupsRef, (snap) => setAllGroups(snap.docs.map((d) => d.data() as Group)));
+  }, [session]);
+
   useEffect(() => {
     if (!group || group.finishedAt || !event?.startedAt) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -179,6 +189,21 @@ export default function PlayPage() {
     return !!data.correct;
   }
 
+  // Fullscreen must be requested synchronously inside a direct user gesture
+  // or browsers silently ignore it - iOS Safari has no Fullscreen API at
+  // all (element.requestFullscreen is undefined there), so this is a no-op
+  // that leaves it in normal browser mode rather than throwing.
+  function handleStartPlaying() {
+    if (!session) return;
+    const requestFullscreen = document.documentElement.requestFullscreen?.bind(
+      document.documentElement
+    );
+    requestFullscreen?.().catch(() => {});
+    const updated: GroupSession = { ...session, introSeen: true };
+    saveGroupSession(updated);
+    setSession(updated);
+  }
+
   if (session === undefined || session === null || !event || !group) {
     return (
       <main className="flex flex-1 items-center justify-center">
@@ -197,6 +222,75 @@ export default function PlayPage() {
         <p className="text-sm text-slate-400">
           Diese Seite aktualisiert sich automatisch, sobald es losgeht.
         </p>
+      </main>
+    );
+  }
+
+  if (event.status === "finished") {
+    const ranked = sortGroupsByRank(allGroups);
+    return (
+      <main className="flex flex-1 flex-col items-center gap-6 px-6 py-10">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Die Rally ist vorbei! 🏁</h1>
+          <p className="mt-1 text-slate-600">Hier ist der Endstand aller Gruppen.</p>
+        </div>
+        <ol className="flex w-full max-w-md flex-col gap-2">
+          {ranked.map((g, index) => {
+            const isOwn = g.id === session.groupId;
+            const finished = g.finishedAt != null;
+            const groupSolvedCount = Object.keys(g.solved).length;
+            return (
+              <li
+                key={g.id}
+                className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
+                  isOwn ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="w-6 text-center text-sm font-bold text-slate-400">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <p className="font-semibold text-slate-900">
+                      {g.name} {isOwn && <span className="text-emerald-600">(ihr)</span>}
+                    </p>
+                    <p className="text-xs text-slate-500">Klasse {g.className}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {finished ? (
+                    <p className="font-mono font-bold tabular-nums">
+                      {formatDuration(g.totalSeconds ?? 0)}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-500">
+                      {groupSolvedCount} / {totalPuzzles} gelöst
+                    </p>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </main>
+    );
+  }
+
+  if (!session.introSeen && !group.finishedAt) {
+    return (
+      <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
+        <h1 className="text-3xl font-bold">Los geht&apos;s, {session.groupName}! 🚀</h1>
+        <div className="flex max-w-md flex-col gap-3 text-left text-slate-600">
+          <p>🗺️ Erkundet die Stationen und findet die Rätsel.</p>
+          <p>⏱️ Die Zeit läuft ab jetzt – je schneller ihr fertig seid, desto besser.</p>
+          <p>⭐ Für jedes gelöste Rätsel gibt es Erfahrungspunkte (XP).</p>
+        </div>
+        <button
+          onClick={handleStartPlaying}
+          className="rounded-xl bg-emerald-600 px-8 py-4 text-lg font-semibold text-white"
+        >
+          Los geht&apos;s!
+        </button>
       </main>
     );
   }

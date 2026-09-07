@@ -9,6 +9,7 @@ import AdminHeader from "@/app/admin/AdminHeader";
 import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
 import { canFinishEvent } from "@/lib/permissions";
 import { formatDuration } from "@/lib/format";
+import { sortGroupsByRank } from "@/lib/group-ranking";
 import type { RallyEvent, EventStatus, Group } from "@/lib/types";
 
 export default function EventOverviewPage({
@@ -78,19 +79,7 @@ export default function EventOverviewPage({
     return () => clearInterval(interval);
   }, [event?.status]);
 
-  const sortedGroups = useMemo(() => {
-    return [...groups].sort((a, b) => {
-      const aFinished = a.finishedAt != null;
-      const bFinished = b.finishedAt != null;
-      if (aFinished && bFinished) return (a.totalSeconds ?? 0) - (b.totalSeconds ?? 0);
-      if (aFinished) return -1;
-      if (bFinished) return 1;
-      const aSolved = Object.keys(a.solved).length;
-      const bSolved = Object.keys(b.solved).length;
-      if (aSolved !== bSolved) return bSolved - aSolved;
-      return a.joinedAt - b.joinedAt;
-    });
-  }, [groups]);
+  const sortedGroups = useMemo(() => sortGroupsByRank(groups), [groups]);
 
   async function updateStatus(status: EventStatus) {
     setUpdating(true);
