@@ -27,7 +27,12 @@ export default function PlayPage() {
     null
   );
 
-  const [selectedFloorId, setSelectedFloorId] = useState<string>(FLOORS[0].id);
+  // Starts unset rather than defaulting to FLOORS[0] (the hardcoded base
+  // "Erdgeschoss") - the actual first floor to show depends on this event's
+  // own floor order, which can put a custom floor (e.g. "Außenbereich")
+  // ahead of the base ones. Synced to the real first floor once allFloors
+  // is known, below.
+  const [selectedFloorId, setSelectedFloorId] = useState<string>("");
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
   const [showCorrectPopup, setShowCorrectPopup] = useState(false);
   const [ackingBroadcast, setAckingBroadcast] = useState(false);
@@ -85,10 +90,22 @@ export default function PlayPage() {
     return unsub;
   }, [session, router]);
 
+  // customFloors/removedFloorIds both start empty and only fill in once
+  // their Firestore listener has fired - these track whether that first
+  // snapshot has actually arrived, so the initial-floor effect below
+  // doesn't jump the gun and lock onto the base "Erdgeschoss" before an
+  // earlier-ordered custom floor (e.g. "Außenbereich") has had a chance to
+  // load in.
+  const [customFloorsLoaded, setCustomFloorsLoaded] = useState(false);
+  const [removedFloorsLoaded, setRemovedFloorsLoaded] = useState(false);
+
   useEffect(() => {
     if (!session) return;
     const q = query(collection(db, "floors"), where("setId", "==", session.eventId));
-    return onSnapshot(q, (snap) => setCustomFloors(snap.docs.map((d) => d.data() as CustomFloor)));
+    return onSnapshot(q, (snap) => {
+      setCustomFloors(snap.docs.map((d) => d.data() as CustomFloor));
+      setCustomFloorsLoaded(true);
+    });
   }, [session]);
 
   useEffect(() => {
@@ -96,6 +113,7 @@ export default function PlayPage() {
     const q = query(collection(db, "removedFloors"), where("setId", "==", session.eventId));
     return onSnapshot(q, (snap) => {
       setRemovedFloorIds(new Set(snap.docs.map((d) => d.data().floorId as string)));
+      setRemovedFloorsLoaded(true);
     });
   }, [session]);
 
@@ -154,6 +172,18 @@ export default function PlayPage() {
       ),
     [customFloors, removedFloorIds]
   );
+
+  // Selects the real first floor (leftmost tab) once both floor sources
+  // have loaded at least once, but only the first time - after that the
+  // group's own tab clicks take over, and this must not fight them if
+  // allFloors changes shape later (e.g. a floor gets removed mid-game).
+  useEffect(() => {
+    if (selectedFloorId || !customFloorsLoaded || !removedFloorsLoaded || allFloors.length === 0) {
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedFloorId(allFloors[0].id);
+  }, [allFloors, selectedFloorId, customFloorsLoaded, removedFloorsLoaded]);
 
   const totalPuzzles = Object.keys(puzzles).length;
   const solvedCount = group ? Object.keys(group.solved).length : 0;

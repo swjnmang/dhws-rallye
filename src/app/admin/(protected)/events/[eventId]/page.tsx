@@ -27,7 +27,7 @@ export default function EventOverviewPage({
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const uid = useAdminIdentity()?.uid ?? null;
+  const identity = useAdminIdentity();
   const [removingGroup, setRemovingGroup] = useState<Group | null>(null);
   const [broadcastText, setBroadcastText] = useState("");
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
@@ -177,7 +177,7 @@ export default function EventOverviewPage({
                 Rallye starten
               </button>
             )}
-            {event.status === "active" && uid && canFinishEvent(uid, event) && (
+            {event.status === "active" && identity && canFinishEvent(identity, event) && (
               <button
                 onClick={() => updateStatus("finished")}
                 disabled={updating}
@@ -186,9 +186,10 @@ export default function EventOverviewPage({
                 Rallye beenden
               </button>
             )}
-            {event.status === "active" && uid && !canFinishEvent(uid, event) && (
+            {event.status === "active" && identity && !canFinishEvent(identity, event) && (
               <p className="text-sm text-slate-500">
-                Nur wer die Rallye angelegt oder gestartet hat, kann sie beenden.
+                Nur wer die Rallye angelegt oder gestartet hat, oder der Organisations-Owner, kann
+                sie beenden.
               </p>
             )}
             {event.status === "finished" && (

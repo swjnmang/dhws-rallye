@@ -38,9 +38,12 @@ export async function PATCH(request: Request, { params }: Params) {
     update.name = body.name.trim();
   }
   if (typeof body?.status === "string" && VALID_STATUSES.includes(body.status)) {
-    if (body.status === "finished" && !canFinishEvent(admin.uid, event)) {
+    if (body.status === "finished" && !canFinishEvent(admin, event)) {
       return NextResponse.json(
-        { error: "Nur wer die Rallye angelegt oder gestartet hat, darf sie beenden" },
+        {
+          error:
+            "Nur wer die Rallye angelegt oder gestartet hat, oder der Organisations-Owner, darf sie beenden",
+        },
         { status: 403 }
       );
     }
