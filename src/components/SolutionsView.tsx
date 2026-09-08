@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { FLOORS } from "@/lib/floors";
@@ -11,7 +12,15 @@ import type { CustomFloor, Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 // from a started rally, where the editable stations editor is no longer
 // reachable. Correct answers never reach the public client SDK (see
 // firestore.rules), so they're fetched once via the admin-gated API route.
-export default function SolutionsView({ setId }: { setId: string }) {
+// backHref is optional since this view is shared by two different callers
+// with different "back" destinations (or none, from the template list).
+export default function SolutionsView({
+  setId,
+  backHref,
+}: {
+  setId: string;
+  backHref?: string;
+}) {
   const [customFloors, setCustomFloors] = useState<CustomFloor[]>([]);
   const [removedFloorIds, setRemovedFloorIds] = useState<Set<string>>(new Set());
   const [hotspots, setHotspots] = useState<Hotspot[]>([]);
@@ -97,6 +106,14 @@ export default function SolutionsView({ setId }: { setId: string }) {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-3 px-6 py-10">
+      {backHref && (
+        <Link
+          href={backHref}
+          className="self-start text-sm font-medium text-slate-500 hover:text-slate-900"
+        >
+          ← Zurück zur Rallye
+        </Link>
+      )}
       {sortedHotspots.length === 0 && (
         <p className="text-center text-slate-500">Noch keine Rätsel eingerichtet.</p>
       )}

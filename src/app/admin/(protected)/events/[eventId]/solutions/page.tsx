@@ -14,7 +14,7 @@ export default function EventSolutionsPage({
   return (
     <>
       <AdminHeader title="Lösungen" />
-      <SolutionsView setId={eventId} />
+      <SolutionsView setId={eventId} backHref={`/admin/events/${eventId}`} />
     </>
   );
 }

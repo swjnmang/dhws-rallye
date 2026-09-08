@@ -400,7 +400,7 @@ export default function PlayPage() {
             onPositionUpdate={(lat, lng) => setCurrentPosition({ lat, lng })}
           />
         ) : (
-          <div className="relative mx-auto w-full max-w-3xl overflow-auto">
+          <div className="relative mx-auto w-full overflow-auto">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={selectedFloor.imagePath!}

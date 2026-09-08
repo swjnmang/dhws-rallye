@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import { formatDuration } from "@/lib/format";
@@ -35,6 +36,12 @@ export default function ResultsPage({
     <>
       <AdminHeader title="Rangliste" />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-3 px-6 py-10">
+        <Link
+          href={`/admin/events/${eventId}`}
+          className="self-start text-sm font-medium text-slate-500 hover:text-slate-900"
+        >
+          ← Zurück zur Rallye
+        </Link>
         {finishedGroups.length === 0 && (
           <p className="text-center text-slate-500">
             Noch keine Gruppe hat alle Rätsel gelöst.
