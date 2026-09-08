@@ -3,7 +3,7 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
 import { FLOORS } from "@/lib/floors";
-import { resolveSetOrgId } from "@/lib/org-scope";
+import { canEditSet } from "@/lib/org-scope";
 import type { CustomFloor, Puzzle } from "@/lib/types";
 
 type Params = { params: Promise<{ floorId: string }> };
@@ -36,8 +36,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!floorSnap.exists) {
     return NextResponse.json({ error: "Ebene nicht gefunden" }, { status: 404 });
   }
-  const setOrgId = await resolveSetOrgId((floorSnap.data() as CustomFloor).setId);
-  if (!setOrgId || setOrgId !== admin.orgId) {
+  if (!(await canEditSet((floorSnap.data() as CustomFloor).setId, admin))) {
     return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
@@ -100,8 +99,7 @@ export async function DELETE(request: Request, { params }: Params) {
     if (!setId) {
       return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
     }
-    const setOrgId = await resolveSetOrgId(setId);
-    if (!setOrgId || setOrgId !== admin.orgId) {
+    if (!(await canEditSet(setId, admin))) {
       return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
     }
     await deleteBaseFloorForSet(floorId, setId);
@@ -114,8 +112,7 @@ export async function DELETE(request: Request, { params }: Params) {
   if (!floorSnap.exists) {
     return NextResponse.json({ error: "Ebene nicht gefunden" }, { status: 404 });
   }
-  const setOrgId = await resolveSetOrgId((floorSnap.data() as CustomFloor).setId);
-  if (!setOrgId || setOrgId !== admin.orgId) {
+  if (!(await canEditSet((floorSnap.data() as CustomFloor).setId, admin))) {
     return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 

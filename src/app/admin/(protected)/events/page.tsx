@@ -8,6 +8,7 @@ import { db } from "@/lib/firebase-client";
 import AdminHeader from "@/app/admin/AdminHeader";
 import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
 import { useAdminIdentity } from "@/lib/admin-identity";
+import { canEditTemplateInPlace } from "@/lib/permissions";
 import type { RallyEvent, Template } from "@/lib/types";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -33,6 +34,10 @@ export default function AdminEventsPage() {
   const [newTemplateName, setNewTemplateName] = useState("");
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
+  const [forkingTemplate, setForkingTemplate] = useState<Template | null>(null);
+  const [forkName, setForkName] = useState("");
+  const [forking, setForking] = useState(false);
+  const [forkError, setForkError] = useState<string | null>(null);
   // Seeds the "is this finished rally older than 24h" check below - doesn't
   // need to tick live, just needs a fixed reference point per page load.
   // eslint-disable-next-line react-hooks/purity
@@ -150,6 +155,32 @@ export default function AdminEventsPage() {
     router.push(`/admin/templates/${data.template.id}/stations`);
   }
 
+  function openForkPrompt(t: Template) {
+    setForkingTemplate(t);
+    setForkName(`${t.name} (Kopie)`);
+    setForkError(null);
+  }
+
+  async function handleForkTemplate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!forkingTemplate || !forkName.trim()) return;
+    setForking(true);
+    setForkError(null);
+    const res = await fetch("/api/admin/templates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: forkName.trim(), sourceTemplateId: forkingTemplate.id }),
+    });
+    setForking(false);
+    if (!res.ok) {
+      setForkError("Kopie konnte nicht erstellt werden");
+      return;
+    }
+    const data = await res.json();
+    setForkingTemplate(null);
+    router.push(`/admin/templates/${data.template.id}/stations`);
+  }
+
   const openEvents = events.filter((e) => e.status !== "finished");
   // Beendete Rallyes verschwinden 24h nach ihrem letzten "Beenden" von der
   // Startseite (die Daten bleiben erhalten, nur die Anzeige blendet sie aus).
@@ -263,34 +294,50 @@ export default function AdminEventsPage() {
             </form>
 
             <ul className="flex flex-col gap-2">
-              {templates.map((t) => (
-                <li
-                  key={t.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
-                >
-                  <span className="font-medium text-slate-800">{t.name}</span>
-                  <div className="flex items-center gap-4">
-                    <Link
-                      href={`/admin/templates/${t.id}/stations`}
-                      className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
-                    >
-                      Bearbeiten
-                    </Link>
-                    <Link
-                      href={`/admin/templates/${t.id}/solutions`}
-                      className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
-                    >
-                      Lösungen
-                    </Link>
-                    <button
-                      onClick={() => setDeletingTemplate(t)}
-                      className="text-sm font-medium text-red-600 hover:text-red-800"
-                    >
-                      Löschen
-                    </button>
-                  </div>
-                </li>
-              ))}
+              {templates.map((t) => {
+                const canEdit = !!identity && canEditTemplateInPlace(identity, t);
+                return (
+                  <li
+                    key={t.id}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                  >
+                    <span className="font-medium text-slate-800">{t.name}</span>
+                    <div className="flex items-center gap-4">
+                      {canEdit ? (
+                        <Link
+                          href={`/admin/templates/${t.id}/stations`}
+                          className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+                        >
+                          Bearbeiten
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => openForkPrompt(t)}
+                          className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+                          title="Nur der Ersteller oder der Organisations-Owner kann diese Vorlage direkt bearbeiten - du erstellst stattdessen eine eigene Kopie."
+                        >
+                          Bearbeiten (als Kopie)
+                        </button>
+                      )}
+                      <Link
+                        href={`/admin/templates/${t.id}/solutions`}
+                        className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+                      >
+                        Lösungen
+                      </Link>
+                      {canEdit && (
+                        <button
+                          onClick={() => setDeletingTemplate(t)}
+                          className="text-sm font-medium text-red-600 hover:text-red-800"
+                        >
+                          Löschen
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
               {templates.length === 0 && (
                 <p className="text-center text-slate-500">Noch keine Vorlagen vorhanden.</p>
               )}
@@ -422,6 +469,46 @@ export default function AdminEventsPage() {
           onConfirm={handleDeleteTemplate}
           onClose={() => setDeletingTemplate(null)}
         />
+      )}
+
+      {forkingTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <form
+            onSubmit={handleForkTemplate}
+            className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl"
+          >
+            <h2 className="text-lg font-bold">Als eigene Kopie bearbeiten</h2>
+            <p className="text-sm text-slate-600">
+              „{forkingTemplate.name}“ gehört jemand anderem - du kannst sie nicht direkt
+              überschreiben. Gib deiner Kopie einen Namen, dann kannst du sie frei bearbeiten.
+            </p>
+            <input
+              autoFocus
+              value={forkName}
+              onChange={(e) => setForkName(e.target.value)}
+              placeholder="Name der Kopie"
+              className="rounded-lg border border-slate-300 px-3 py-2"
+            />
+            {forkError && <p className="text-sm text-red-600">{forkError}</p>}
+            <div className="mt-2 flex flex-col gap-2">
+              <button
+                type="submit"
+                disabled={forking || !forkName.trim()}
+                className="rounded-lg bg-slate-900 px-4 py-2 font-semibold text-white disabled:opacity-40"
+              >
+                {forking ? "Erstellt…" : "Kopie erstellen & bearbeiten"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setForkingTemplate(null)}
+                disabled={forking}
+                className="text-sm font-medium text-slate-500 hover:text-slate-900 disabled:opacity-40"
+              >
+                Abbrechen
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </>
   );

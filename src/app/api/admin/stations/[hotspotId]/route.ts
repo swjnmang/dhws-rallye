@@ -3,7 +3,7 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
-import { resolveSetOrgId } from "@/lib/org-scope";
+import { resolveSetOrgId, canEditSet } from "@/lib/org-scope";
 import type { Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 
 type Params = { params: Promise<{ hotspotId: string }> };
@@ -60,8 +60,7 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
   }
   const hotspotData = hotspotSnap.data() as Hotspot;
-  const setOrgId = await resolveSetOrgId(hotspotData.setId);
-  if (!setOrgId || setOrgId !== admin.orgId) {
+  if (!(await canEditSet(hotspotData.setId, admin))) {
     return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
@@ -145,8 +144,7 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "Hotspot nicht gefunden" }, { status: 404 });
   }
   const hotspot = hotspotSnap.data() as Hotspot;
-  const setOrgId = await resolveSetOrgId(hotspot.setId);
-  if (!setOrgId || setOrgId !== admin.orgId) {
+  if (!(await canEditSet(hotspot.setId, admin))) {
     return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
   const puzzleId = hotspot.puzzleId;

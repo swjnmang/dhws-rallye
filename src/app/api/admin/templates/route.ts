@@ -25,6 +25,8 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const name = typeof body?.name === "string" ? body.name.trim() : "";
   const sourceEventId = typeof body?.sourceEventId === "string" && body.sourceEventId ? body.sourceEventId : "";
+  const sourceTemplateId =
+    typeof body?.sourceTemplateId === "string" && body.sourceTemplateId ? body.sourceTemplateId : "";
 
   if (!name) {
     return NextResponse.json({ error: "Name ist erforderlich" }, { status: 400 });
@@ -38,12 +40,33 @@ export async function POST(request: Request) {
     }
   }
 
+  // Forking someone else's template (see canEditTemplateInPlace): anyone in
+  // the org may read/clone any of the org's templates, this just requires
+  // the org to match, not edit rights on the source - the whole point is to
+  // hand a non-owner their own editable copy instead of write access to the
+  // original.
+  if (sourceTemplateId) {
+    const templateDoc = await adminDb().collection("templates").doc(sourceTemplateId).get();
+    const sourceTemplate = templateDoc.data() as Template | undefined;
+    if (!sourceTemplate || sourceTemplate.orgId !== admin.orgId) {
+      return NextResponse.json({ error: "Vorlage nicht gefunden" }, { status: 404 });
+    }
+  }
+
   const templateId = generateId();
-  const template: Template = { id: templateId, name, createdAt: Date.now(), orgId: admin.orgId };
+  const template: Template = {
+    id: templateId,
+    name,
+    createdAt: Date.now(),
+    orgId: admin.orgId,
+    createdByUid: admin.uid,
+  };
 
   await adminDb().collection("templates").doc(templateId).set(template);
   if (sourceEventId) {
     await cloneStations(sourceEventId, templateId);
+  } else if (sourceTemplateId) {
+    await cloneStations(sourceTemplateId, templateId);
   }
 
   return NextResponse.json({ template });

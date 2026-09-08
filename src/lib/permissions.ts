@@ -1,4 +1,4 @@
-import type { OrgRole, RallyEvent } from "./types";
+import type { OrgRole, RallyEvent, Template } from "./types";
 
 // Only the teacher who created or (most recently) started a rally may end
 // it themselves - not any other org member. Events from before this existed
@@ -13,4 +13,18 @@ export function canFinishEvent(
   if (!event.createdByUid && !event.startedByUid) return true;
   if (admin.orgRole === "owner") return true;
   return admin.uid === event.createdByUid || admin.uid === event.startedByUid;
+}
+
+// Only the org owner or the template's own creator may edit its stations in
+// place (i.e. save changes under the template's existing id/name) - anyone
+// else must save their edits as a new template instead, so they can never
+// overwrite a colleague's work. A template with no recorded creator (e.g.
+// the auto-seeded example template) is owner-only until someone claims it
+// by saving their own copy.
+export function canEditTemplateInPlace(
+  admin: { uid: string; orgRole?: OrgRole | null },
+  template: Pick<Template, "createdByUid">
+): boolean {
+  if (admin.orgRole === "owner") return true;
+  return !!template.createdByUid && admin.uid === template.createdByUid;
 }

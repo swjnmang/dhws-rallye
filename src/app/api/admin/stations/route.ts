@@ -3,7 +3,7 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { generateId } from "@/lib/codes";
 import { validatePuzzleInput } from "@/lib/puzzle-input";
-import { resolveSetOrgId } from "@/lib/org-scope";
+import { canEditSet } from "@/lib/org-scope";
 import type { Hotspot, Puzzle, PuzzleAnswer } from "@/lib/types";
 
 // Hotspots/puzzles live in shared top-level collections, scoped by `setId`
@@ -44,8 +44,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
 
-  const setOrgId = await resolveSetOrgId(setId);
-  if (!setOrgId || setOrgId !== admin.orgId) {
+  if (!(await canEditSet(setId, admin))) {
     return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 

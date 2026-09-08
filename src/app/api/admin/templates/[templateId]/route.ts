@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { deleteBlobIfUnreferenced } from "@/lib/blob-cleanup";
+import { canEditTemplateInPlace } from "@/lib/permissions";
 import type { CustomFloor, Puzzle, Template } from "@/lib/types";
 
 type Params = { params: Promise<{ templateId: string }> };
@@ -28,6 +29,14 @@ export async function DELETE(_request: Request, { params }: Params) {
   }
   if (template.orgId !== admin.orgId) {
     return NextResponse.json({ error: "Kein Zugriff auf diese Vorlage" }, { status: 403 });
+  }
+  // Same ownership rule as editing: deleting is the most destructive form
+  // of "overwriting" someone else's template, so it's gated the same way.
+  if (!canEditTemplateInPlace(admin, template)) {
+    return NextResponse.json(
+      { error: "Nur der Ersteller oder der Organisations-Owner darf diese Vorlage löschen" },
+      { status: 403 }
+    );
   }
 
   const [hotspotsSnap, puzzlesSnap, floorsSnap, removedFloorsSnap] = await Promise.all([

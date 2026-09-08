@@ -72,6 +72,13 @@ export type Template = {
   name: string;
   createdAt: number;
   orgId: string;
+  // Who created this template - only they (or the org owner) may edit its
+  // stations in place; anyone else editing it must save a copy under a new
+  // name instead (see canEditTemplateInPlace in permissions.ts). null for
+  // templates predating this field (e.g. the auto-seeded example template
+  // for a new org), which are treated as owner-only until someone claims
+  // them by saving a copy.
+  createdByUid: string | null;
 };
 
 // Hotspots/puzzles/answers all carry a `setId`, which is either an eventId

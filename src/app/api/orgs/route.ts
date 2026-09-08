@@ -27,9 +27,13 @@ async function seedExampleTemplate(newOrgId: string): Promise<void> {
   const newTemplateId = generateId();
   const newTemplate: Template = {
     id: newTemplateId,
-    name: `Beispiel-Vorlage: ${sourceTemplate.name} (frei bearbeitbar)`,
+    name: `Beispiel-Vorlage: ${sourceTemplate.name}`,
     createdAt: Date.now(),
     orgId: newOrgId,
+    // No specific human creator - only the org owner may edit it in place
+    // until a member saves their own copy under a new name (see
+    // canEditTemplateInPlace).
+    createdByUid: null,
   };
   await adminDb().collection("templates").doc(newTemplateId).set(newTemplate);
   await cloneStations(sourceTemplate.id, newTemplateId);

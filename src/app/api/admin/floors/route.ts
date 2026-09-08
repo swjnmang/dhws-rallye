@@ -3,7 +3,7 @@ import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import { generateId } from "@/lib/codes";
 import { FLOORS } from "@/lib/floors";
-import { resolveSetOrgId } from "@/lib/org-scope";
+import { canEditSet } from "@/lib/org-scope";
 import type { CustomFloor } from "@/lib/types";
 
 export async function POST(request: Request) {
@@ -26,8 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 400 });
   }
 
-  const setOrgId = await resolveSetOrgId(setId);
-  if (!setOrgId || setOrgId !== admin.orgId) {
+  if (!(await canEditSet(setId, admin))) {
     return NextResponse.json({ error: "Kein Zugriff" }, { status: 403 });
   }
 
