@@ -10,6 +10,7 @@ import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
 import { canFinishEvent } from "@/lib/permissions";
 import { formatDuration } from "@/lib/format";
 import { sortGroupsByRank } from "@/lib/group-ranking";
+import { useAdminIdentity } from "@/lib/admin-identity";
 import type { RallyEvent, EventStatus, Group } from "@/lib/types";
 
 export default function EventOverviewPage({
@@ -26,7 +27,7 @@ export default function EventOverviewPage({
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
-  const [uid, setUid] = useState<string | null>(null);
+  const uid = useAdminIdentity()?.uid ?? null;
   const [removingGroup, setRemovingGroup] = useState<Group | null>(null);
   const [broadcastText, setBroadcastText] = useState("");
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
@@ -40,13 +41,6 @@ export default function EventOverviewPage({
       setEvent(snap.exists() ? (snap.data() as RallyEvent) : null);
     });
   }, [eventId]);
-
-  useEffect(() => {
-    fetch("/api/admin/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setUid(data?.uid ?? null))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     return onSnapshot(collection(db, "events", eventId, "groups"), (snap) => {

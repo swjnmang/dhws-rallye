@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "./firebase-admin";
-import type { AppUser } from "./types";
+import type { AppUser, Organization } from "./types";
 
 export const ADMIN_COOKIE_NAME = "rallye_admin_session";
 export const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
@@ -100,4 +100,35 @@ export async function requireSuperAdmin(): Promise<AdminIdentity> {
   const admin = await requireAdmin();
   if (!admin.isSuperAdmin) throw new AdminMembershipError("Kein Super-Admin-Zugriff");
   return admin;
+}
+
+export type AdminSummary = AdminIdentity & {
+  orgName: string | null;
+  pendingCount: number;
+};
+
+// Adds the org display name and (for owners) the pending-join-request count
+// on top of an already-resolved identity - the extra reads /api/admin/me
+// and the protected layout both need, kept in one place so they don't drift.
+export async function loadAdminSummary(admin: AdminIdentity): Promise<AdminSummary> {
+  let orgName: string | null = null;
+  let pendingCount = 0;
+
+  if (admin.orgId) {
+    const orgDoc = await adminDb().collection("organizations").doc(admin.orgId).get();
+    const org = orgDoc.data() as Organization | undefined;
+    orgName = org?.name ?? admin.orgId;
+
+    if (admin.orgRole === "owner") {
+      const countSnap = await adminDb()
+        .collection("users")
+        .where("orgId", "==", admin.orgId)
+        .where("membershipStatus", "==", "pending")
+        .count()
+        .get();
+      pendingCount = countSnap.data().count;
+    }
+  }
+
+  return { ...admin, orgName, pendingCount };
 }

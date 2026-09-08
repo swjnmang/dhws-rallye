@@ -7,6 +7,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
 import AdminHeader from "@/app/admin/AdminHeader";
 import ConfirmDeleteByName from "@/components/ConfirmDeleteByName";
+import { useAdminIdentity } from "@/lib/admin-identity";
 import type { RallyEvent, Template } from "@/lib/types";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -32,23 +33,16 @@ export default function AdminEventsPage() {
   const [newTemplateName, setNewTemplateName] = useState("");
   const [creatingTemplate, setCreatingTemplate] = useState(false);
   const [templateError, setTemplateError] = useState<string | null>(null);
-  const [pendingOrgRequests, setPendingOrgRequests] = useState(0);
-  // undefined = not loaded yet, null = no org (rallies/templates need one).
-  const [orgId, setOrgId] = useState<string | null | undefined>(undefined);
   // Seeds the "is this finished rally older than 24h" check below - doesn't
   // need to tick live, just needs a fixed reference point per page load.
   // eslint-disable-next-line react-hooks/purity
   const [now] = useState(Date.now());
 
-  useEffect(() => {
-    fetch("/api/admin/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        setPendingOrgRequests(data?.pendingCount ?? 0);
-        setOrgId(data?.orgId ?? null);
-      })
-      .catch(() => setOrgId(null));
-  }, []);
+  // Resolved once, server-side, by the protected layout - no separate
+  // /api/admin/me round trip needed here (see admin-identity.tsx).
+  const identity = useAdminIdentity();
+  const orgId = identity?.orgId;
+  const pendingOrgRequests = identity?.pendingCount ?? 0;
 
   useEffect(() => {
     if (!orgId) return;
@@ -195,7 +189,7 @@ export default function AdminEventsPage() {
               Rätseln auf Gebäudeplänen oder Karten. Deine Schüler:innen bilden Gruppen, laufen die
               Stationen ab und lösen dort die Rätsel, um Punkte zu sammeln.
             </p>
-            {orgId === null && (
+            {!orgId && (
               <p className="text-center text-sm text-amber-700">
                 Du gehörst noch keiner Organisation an. Gründe eine oder tritt einer bei, um Rallyes
                 und Vorlagen anzulegen.

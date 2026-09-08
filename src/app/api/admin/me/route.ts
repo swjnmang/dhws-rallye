@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { requireAdmin, AdminAuthError } from "@/lib/admin-auth";
-import { adminDb } from "@/lib/firebase-admin";
-import type { Organization } from "@/lib/types";
+import { requireAdmin, loadAdminSummary, AdminAuthError } from "@/lib/admin-auth";
 
 // Backs the header's "which org am I in" display (incl. a pending-requests
 // badge for owners) and the /admin/organization page's state (none /
-// pending / owner / member).
+// pending / owner / member) - both need to refetch this after their own
+// mutations, unlike most other pages which get it for free from the
+// protected layout's AdminIdentityProvider instead of calling this route.
 export async function GET() {
   let admin;
   try {
@@ -17,31 +17,6 @@ export async function GET() {
     throw e;
   }
 
-  let orgName: string | null = null;
-  let pendingCount = 0;
-  if (admin.orgId) {
-    const orgDoc = await adminDb().collection("organizations").doc(admin.orgId).get();
-    const org = orgDoc.data() as Organization | undefined;
-    orgName = org?.name ?? admin.orgId;
-
-    if (admin.orgRole === "owner") {
-      const countSnap = await adminDb()
-        .collection("users")
-        .where("orgId", "==", admin.orgId)
-        .where("membershipStatus", "==", "pending")
-        .count()
-        .get();
-      pendingCount = countSnap.data().count;
-    }
-  }
-
-  return NextResponse.json({
-    uid: admin.uid,
-    orgId: admin.orgId,
-    orgName,
-    orgRole: admin.orgRole,
-    membershipStatus: admin.membershipStatus,
-    isSuperAdmin: admin.isSuperAdmin,
-    pendingCount,
-  });
+  const summary = await loadAdminSummary(admin);
+  return NextResponse.json(summary);
 }

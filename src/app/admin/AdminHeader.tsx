@@ -1,21 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-type Me = { orgName: string | null; pendingCount: number };
+import { useAdminIdentity } from "@/lib/admin-identity";
 
 export default function AdminHeader({ title }: { title: string }) {
   const router = useRouter();
-  const [me, setMe] = useState<Me | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/me")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setMe(data ? { orgName: data.orgName, pendingCount: data.pendingCount } : null))
-      .catch(() => {});
-  }, []);
+  const me = useAdminIdentity();
 
   async function handleLogout() {
     await fetch("/api/admin/logout", { method: "POST" });
