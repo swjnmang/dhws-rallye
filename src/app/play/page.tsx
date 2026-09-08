@@ -30,6 +30,7 @@ export default function PlayPage() {
   const [selectedFloorId, setSelectedFloorId] = useState<string>(FLOORS[0].id);
   const [activeHotspotId, setActiveHotspotId] = useState<string | null>(null);
   const [showCorrectPopup, setShowCorrectPopup] = useState(false);
+  const [ackingBroadcast, setAckingBroadcast] = useState(false);
   // Date.now() seeds the ticking clock; the interval below keeps it live.
   // eslint-disable-next-line react-hooks/purity
   const [now, setNow] = useState(Date.now());
@@ -204,6 +205,21 @@ export default function PlayPage() {
     setSession(updated);
   }
 
+  async function handleAckBroadcast(broadcastId: string) {
+    if (!session) return;
+    setAckingBroadcast(true);
+    await fetch("/api/broadcast-ack", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        eventId: session.eventId,
+        groupId: session.groupId,
+        broadcastId,
+      }),
+    }).catch(() => {});
+    setAckingBroadcast(false);
+  }
+
   if (session === undefined || session === null || !event || !group) {
     return (
       <main className="flex flex-1 items-center justify-center">
@@ -276,6 +292,14 @@ export default function PlayPage() {
     );
   }
 
+  // An unread message blocks play until acknowledged - a fresh broadcast's
+  // id won't match what this group last confirmed, even if they'd already
+  // acked an earlier one.
+  const pendingBroadcast =
+    event.broadcastMessage && event.broadcastMessage.id !== (group.ackedBroadcastId ?? null)
+      ? event.broadcastMessage
+      : null;
+
   if (!session.introSeen && !group.finishedAt) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
@@ -316,6 +340,14 @@ export default function PlayPage() {
               <p className="text-lg font-semibold text-white">+ 5 XP</p>
             </div>
           </div>
+        )}
+
+        {pendingBroadcast && (
+          <BroadcastOverlay
+            message={pendingBroadcast}
+            acking={ackingBroadcast}
+            onAck={() => handleAckBroadcast(pendingBroadcast.id)}
+          />
         )}
       </>
     );
@@ -414,6 +446,44 @@ export default function PlayPage() {
           </div>
         </div>
       )}
+
+      {pendingBroadcast && (
+        <BroadcastOverlay
+          message={pendingBroadcast}
+          acking={ackingBroadcast}
+          onAck={() => handleAckBroadcast(pendingBroadcast.id)}
+        />
+      )}
     </main>
+  );
+}
+
+// Sits above everything else (including an open puzzle modal) so the group
+// can't keep playing past a message from the host until they confirm it.
+function BroadcastOverlay({
+  message,
+  acking,
+  onAck,
+}: {
+  message: { text: string };
+  acking: boolean;
+  onAck: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
+      <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 text-center shadow-xl">
+        <p className="text-sm font-semibold uppercase tracking-wide text-amber-600">
+          Nachricht von der Spielleitung
+        </p>
+        <p className="text-lg font-medium text-slate-900">{message.text}</p>
+        <button
+          onClick={onAck}
+          disabled={acking}
+          className="rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white disabled:opacity-50"
+        >
+          Verstanden
+        </button>
+      </div>
+    </div>
   );
 }

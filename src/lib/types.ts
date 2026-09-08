@@ -51,6 +51,18 @@ export type RallyEvent = {
   // existed have this unset, which every org-ownership check treats as
   // "belongs to no one" (not "belongs to everyone").
   orgId: string;
+  // The most recent message the host has broadcast to every group, if any.
+  // Only settable while status is "active". A group must acknowledge it
+  // (see Group.ackedBroadcastId) before playing on - the id changes with
+  // each new message so a fresh broadcast reopens the "unread" state even
+  // if the previous one was already acknowledged.
+  broadcastMessage: BroadcastMessage | null;
+};
+
+export type BroadcastMessage = {
+  id: string;
+  text: string;
+  sentAt: number;
 };
 
 // A reusable, named set of stations a teacher has saved from a finished
@@ -187,4 +199,8 @@ export type Group = {
   // (collectionGroup) and can't otherwise filter by which org the parent
   // event belongs to.
   orgId: string;
+  // Id of the most recent RallyEvent.broadcastMessage this group has
+  // confirmed reading. null (or not yet matching the event's current
+  // broadcastMessage.id) means there's an unread message blocking play.
+  ackedBroadcastId: string | null;
 };

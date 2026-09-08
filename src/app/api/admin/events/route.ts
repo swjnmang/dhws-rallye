@@ -59,6 +59,7 @@ export async function POST(request: Request) {
     createdByUid: admin.uid,
     startedByUid: null,
     orgId: admin.orgId,
+    broadcastMessage: null,
   };
 
   await eventsRef.doc(id).set(event);

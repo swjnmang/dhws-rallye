@@ -28,6 +28,9 @@ export default function EventOverviewPage({
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [uid, setUid] = useState<string | null>(null);
   const [removingGroup, setRemovingGroup] = useState<Group | null>(null);
+  const [broadcastText, setBroadcastText] = useState("");
+  const [sendingBroadcast, setSendingBroadcast] = useState(false);
+  const [broadcastFeedback, setBroadcastFeedback] = useState<string | null>(null);
   // Date.now() seeds the ticking clock; the interval below keeps it live.
   // eslint-disable-next-line react-hooks/purity
   const [now, setNow] = useState(Date.now());
@@ -128,6 +131,26 @@ export default function EventOverviewPage({
     setRemovingGroup(null);
   }
 
+  async function handleSendBroadcast() {
+    const text = broadcastText.trim();
+    if (!text) return;
+    setSendingBroadcast(true);
+    setBroadcastFeedback(null);
+    const res = await fetch(`/api/admin/events/${eventId}/broadcast`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    setSendingBroadcast(false);
+    if (res.ok) {
+      setBroadcastText("");
+      setBroadcastFeedback("Nachricht gesendet.");
+      return;
+    }
+    const data = await res.json().catch(() => null);
+    setBroadcastFeedback(data?.error ?? "Senden fehlgeschlagen.");
+  }
+
   if (!event) {
     return (
       <>
@@ -185,6 +208,35 @@ export default function EventOverviewPage({
             )}
           </div>
         </section>
+
+        {event.status === "active" && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <p className="text-sm font-medium text-slate-500">Nachricht an alle Gruppen</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={broadcastText}
+                onChange={(e) => setBroadcastText(e.target.value)}
+                placeholder="z. B. Noch 5 Minuten!"
+                className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={handleSendBroadcast}
+                disabled={sendingBroadcast || !broadcastText.trim()}
+                className="shrink-0 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-40"
+              >
+                {sendingBroadcast ? "Sendet…" : "Senden"}
+              </button>
+            </div>
+            {broadcastFeedback && (
+              <p className="mt-2 text-sm text-slate-500">{broadcastFeedback}</p>
+            )}
+            <p className="mt-2 text-xs text-slate-400">
+              Wird bei allen Gruppen eingeblendet und muss bestätigt werden, bevor sie
+              weiterspielen können.
+            </p>
+          </section>
+        )}
 
         {isDraft && (
           <section className="flex flex-col items-center gap-4 rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
