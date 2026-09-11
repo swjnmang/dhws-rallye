@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type Slide = { src: string; alt: string; caption: string };
 
@@ -27,15 +27,12 @@ const SLIDES: Slide[] = [
   },
 ];
 
-const AUTOPLAY_MS = 4500;
-
 export default function ScreenshotSlider() {
   const [index, setIndex] = useState(0);
 
-  useEffect(() => {
-    const timer = setInterval(() => setIndex((i) => (i + 1) % SLIDES.length), AUTOPLAY_MS);
-    return () => clearInterval(timer);
-  }, []);
+  function goTo(next: number) {
+    setIndex((next + SLIDES.length) % SLIDES.length);
+  }
 
   return (
     <div className="w-full max-w-2xl">
@@ -54,6 +51,23 @@ export default function ScreenshotSlider() {
         <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-4 pb-3 pt-8 text-left text-sm font-medium text-white">
           {SLIDES[index].caption}
         </p>
+
+        <button
+          type="button"
+          onClick={() => goTo(index - 1)}
+          aria-label="Vorheriges Bild"
+          className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-slate-800 shadow-sm transition hover:bg-white"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          onClick={() => goTo(index + 1)}
+          aria-label="Nächstes Bild"
+          className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-slate-800 shadow-sm transition hover:bg-white"
+        >
+          ›
+        </button>
       </div>
 
       <div className="mt-3 flex justify-center gap-2">
@@ -61,7 +75,7 @@ export default function ScreenshotSlider() {
           <button
             key={slide.src}
             type="button"
-            onClick={() => setIndex(i)}
+            onClick={() => goTo(i)}
             aria-label={`Bild ${i + 1} von ${SLIDES.length} anzeigen`}
             className={`h-2 rounded-full transition-all ${
               i === index ? "w-6 bg-slate-900" : "w-2 bg-slate-300"

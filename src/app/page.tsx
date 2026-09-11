@@ -13,8 +13,6 @@ export default function HomePage() {
           </p>
         </div>
 
-        <ScreenshotSlider />
-
         <div className="flex w-full max-w-sm flex-col gap-4">
           <Link
             href="/admin/login"
@@ -29,6 +27,8 @@ export default function HomePage() {
             Registrieren
           </Link>
         </div>
+
+        <ScreenshotSlider />
       </main>
 
       <footer className="px-6 pb-6 text-center text-xs text-slate-400">
