@@ -23,6 +23,9 @@ export default function AdminHeader({ title }: { title: string }) {
         <h1 className="text-lg font-bold text-slate-900">{title}</h1>
       </div>
       <div className="flex items-center gap-4">
+        <Link href="/admin/help" className="text-sm font-medium text-slate-500 hover:text-slate-900">
+          Anleitungen
+        </Link>
         {me?.orgName && (
           <Link
             href="/admin/organization"

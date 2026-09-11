@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ScreenshotSlider from "@/components/ScreenshotSlider";
 
 export default function HomePage() {
   return (
@@ -11,6 +12,8 @@ export default function HomePage() {
             individuelle Rätsel und lass Gruppen live gegeneinander antreten.
           </p>
         </div>
+
+        <ScreenshotSlider />
 
         <div className="flex w-full max-w-sm flex-col gap-4">
           <Link
