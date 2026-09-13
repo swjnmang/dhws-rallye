@@ -45,6 +45,14 @@ export async function POST(request: Request) {
   const correctAnswer = answerSnap.data() as PuzzleAnswer;
   const event = eventSnap.data() as RallyEvent;
 
+  // The `puzzles` collection is public-read and not itself org-scoped (see
+  // firestore.rules) - without this check, a group could submit any other
+  // rally's puzzleId (including from a different org entirely) and have it
+  // silently counted as solved for their own event.
+  if (puzzle.setId !== eventId) {
+    return NextResponse.json({ error: "Rätsel gehört nicht zu dieser Rallye" }, { status: 403 });
+  }
+
   if (group.finishedAt) {
     return NextResponse.json({ correct: true, allSolved: true });
   }
@@ -87,36 +95,53 @@ export async function POST(request: Request) {
       normalizeText(answer) === normalizeText(correctAnswer.correctText);
   }
 
-  const previousAttempts = group.progress?.[puzzleId]?.attempts ?? 0;
-  const attempts = previousAttempts + 1;
+  // The puzzle count for this event can't change once the rally is no
+  // longer a draft (see canEditSet), so it's safe to read once here rather
+  // than inside the transaction below.
+  const totalPuzzles = isCorrect
+    ? (
+        await adminDb().collection("puzzles").where("setId", "==", eventId).count().get()
+      ).data().count
+    : 0;
+
+  // group.xp/progress/solved are read-modified-written here, so two nearly
+  // simultaneous correct answers (e.g. the group has the rally open on two
+  // devices) must not silently lose one of them to a stale read - hence a
+  // transaction instead of the plain get()+update() this used to be.
   const now = Date.now();
+  const result = await adminDb().runTransaction(async (tx) => {
+    const freshGroupSnap = await tx.get(groupRef);
+    const freshGroup = freshGroupSnap.data() as Group;
 
-  const update: Record<string, unknown> = {
-    [`progress.${puzzleId}.attempts`]: attempts,
-  };
-
-  let allSolved = false;
-
-  if (isCorrect) {
-    update[`solved.${puzzleId}`] = { solvedAt: now, attempts };
-    update.xp = (group.xp ?? 0) + 5;
-
-    const puzzlesCountSnap = await adminDb()
-      .collection("puzzles")
-      .where("setId", "==", eventId)
-      .count()
-      .get();
-    const totalPuzzles = puzzlesCountSnap.data().count;
-    const solvedCount = Object.keys(group.solved).length + 1;
-
-    if (solvedCount >= totalPuzzles) {
-      allSolved = true;
-      update.finishedAt = now;
-      update.totalSeconds = Math.round((now - (event.startedAt ?? now)) / 1000);
+    if (freshGroup.finishedAt) {
+      return { correct: true, allSolved: true };
     }
-  }
+    if (freshGroup.solved[puzzleId]) {
+      return { correct: true, allSolved: false };
+    }
 
-  await groupRef.update(update);
+    const previousAttempts = freshGroup.progress?.[puzzleId]?.attempts ?? 0;
+    const attempts = previousAttempts + 1;
+    const update: Record<string, unknown> = {
+      [`progress.${puzzleId}.attempts`]: attempts,
+    };
 
-  return NextResponse.json({ correct: isCorrect, allSolved });
+    let allSolved = false;
+    if (isCorrect) {
+      update[`solved.${puzzleId}`] = { solvedAt: now, attempts };
+      update.xp = (freshGroup.xp ?? 0) + 5;
+
+      const solvedCount = Object.keys(freshGroup.solved).length + 1;
+      if (solvedCount >= totalPuzzles) {
+        allSolved = true;
+        update.finishedAt = now;
+        update.totalSeconds = Math.round((now - (event.startedAt ?? now)) / 1000);
+      }
+    }
+
+    tx.update(groupRef, update);
+    return { correct: isCorrect, allSolved };
+  });
+
+  return NextResponse.json(result);
 }

@@ -20,11 +20,15 @@ export async function resolveSetOrgId(setId: string): Promise<string | null> {
 }
 
 // Same org check as resolveSetOrgId, but for routes that WRITE a set's
-// stations/floors: an event may be edited by anyone in its org (unchanged),
-// but a template may only be edited in place by its creator or the org
-// owner - everyone else has to save their changes as a new template (see
-// canEditTemplateInPlace), so members can't overwrite each other's work by
-// directly editing a shared template's stations.
+// stations/floors: an event may be edited by anyone in its org, but only
+// while it's still in "draft" - once a rally has started, its stations must
+// stay fixed (editing hotspots/puzzles a group is actively playing would
+// leave dangling puzzleId references in group.solved and let already-open
+// puzzle modals point at deleted data). A template may only be edited in
+// place by its creator or the org owner - everyone else has to save their
+// changes as a new template (see canEditTemplateInPlace), so members can't
+// overwrite each other's work by directly editing a shared template's
+// stations.
 export async function canEditSet(
   setId: string,
   admin: { uid: string; orgId: string | null; orgRole?: OrgRole | null }
@@ -33,7 +37,7 @@ export async function canEditSet(
   const eventDoc = await db.collection("events").doc(setId).get();
   if (eventDoc.exists) {
     const event = eventDoc.data() as RallyEvent;
-    return !!event.orgId && event.orgId === admin.orgId;
+    return !!event.orgId && event.orgId === admin.orgId && event.status === "draft";
   }
 
   const templateDoc = await db.collection("templates").doc(setId).get();
