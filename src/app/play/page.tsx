@@ -430,31 +430,33 @@ export default function PlayPage() {
             onPositionUpdate={(lat, lng) => setCurrentPosition({ lat, lng })}
           />
         ) : (
-          <div className="relative mx-auto w-full overflow-auto">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={selectedFloor.imagePath!}
-              alt={selectedFloor.name}
-              className="w-full select-none"
-            />
-            {floorHotspots.map((hotspot) => {
-              const solved = hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false;
-              return (
-                <button
-                  key={hotspot.id}
-                  onClick={() => !solved && setActiveHotspotId(hotspot.id)}
-                  style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
-                  className={`absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold shadow-md ${
-                    solved
-                      ? "bg-emerald-500 text-white"
-                      : "bg-amber-400 text-white animate-pulse"
-                  }`}
-                  aria-label={hotspot.roomName}
-                >
-                  {solved ? "✓" : "?"}
-                </button>
-              );
-            })}
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="relative max-h-full max-w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={selectedFloor.imagePath!}
+                alt={selectedFloor.name}
+                className="block max-h-full max-w-full w-auto h-auto select-none"
+              />
+              {floorHotspots.map((hotspot) => {
+                const solved = hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false;
+                return (
+                  <button
+                    key={hotspot.id}
+                    onClick={() => !solved && setActiveHotspotId(hotspot.id)}
+                    style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
+                    className={`absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold shadow-md ${
+                      solved
+                        ? "bg-emerald-500 text-white"
+                        : "bg-amber-400 text-white animate-pulse"
+                    }`}
+                    aria-label={hotspot.roomName}
+                  >
+                    {solved ? "✓" : "?"}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
