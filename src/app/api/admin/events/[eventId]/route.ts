@@ -56,9 +56,11 @@ export async function PATCH(request: Request, { params }: Params) {
     // startedByUid, unlike startedAt, is refreshed on every (re-)start -
     // whoever (re-)opens the rally is who may finish it from here on.
     if (body.status === "active") {
+      const now = Date.now();
       if (!event.startedAt) {
-        update.startedAt = Date.now();
+        update.startedAt = now;
       }
+      update.lastActivatedAt = now;
       update.startedByUid = admin.uid;
     }
 

@@ -33,6 +33,13 @@ export type RallyEvent = {
   // Every group's timer is measured from this shared moment, not from when
   // they individually joined, so the whole class starts the race together.
   startedAt: number | null;
+  // Refreshed every time status moves to "active", including a reopen -
+  // unlike startedAt (which intentionally never resets, so an existing
+  // group's elapsed-time math stays anchored to the original start). Used
+  // only by close-stale's 12h check, so reopening a rally that originally
+  // started long ago doesn't get it immediately auto-closed again before
+  // anyone's had a chance to use the reopened session.
+  lastActivatedAt: number | null;
   // Set whenever status moves to "finished" (manually or via close-stale).
   // Used only to auto-hide old finished rallies from the landing page after
   // 24h - re-finishing a reopened rally overwrites it.

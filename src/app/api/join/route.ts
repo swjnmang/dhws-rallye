@@ -29,6 +29,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Die Rallye ist bereits beendet" }, { status: 409 });
   }
 
+  // Two groups with the same name+class in one rally would be
+  // indistinguishable everywhere they're listed (lobby, live ranking, the
+  // teacher's "Entfernen" button) - checked case-insensitively so "Adler"
+  // and "adler" don't slip past each other either. Different classes with
+  // the same group name are still fine, since those aren't ambiguous.
+  const existingGroupsSnap = await eventDoc.ref.collection("groups").get();
+  const normalizedName = groupName.toLowerCase();
+  const normalizedClassName = className.toLowerCase();
+  const isDuplicate = existingGroupsSnap.docs.some((d) => {
+    const existing = d.data() as Group;
+    return (
+      existing.name.toLowerCase() === normalizedName &&
+      existing.className.toLowerCase() === normalizedClassName
+    );
+  });
+  if (isDuplicate) {
+    return NextResponse.json(
+      { error: "Dieser Gruppenname ist in dieser Rallye schon vergeben" },
+      { status: 409 }
+    );
+  }
+
   const groupId = generateId();
   const group: Group = {
     id: groupId,

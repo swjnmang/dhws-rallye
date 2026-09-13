@@ -54,6 +54,7 @@ export async function POST(request: Request) {
     joinCode,
     createdAt: Date.now(),
     startedAt: null,
+    lastActivatedAt: null,
     finishedAt: null,
     templateId,
     createdByUid: admin.uid,

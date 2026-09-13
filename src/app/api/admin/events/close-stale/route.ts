@@ -28,7 +28,10 @@ export async function POST() {
   let closedCount = 0;
   snap.docs.forEach((d) => {
     const event = d.data() as RallyEvent;
-    if (event.startedAt && now - event.startedAt > TWELVE_HOURS_MS) {
+    // Falls back to startedAt for events written before lastActivatedAt
+    // existed - it's the same value for a rally that's never been reopened.
+    const activeSince = event.lastActivatedAt ?? event.startedAt;
+    if (activeSince && now - activeSince > TWELVE_HOURS_MS) {
       batch.update(d.ref, { status: "finished", finishedAt: now });
       closedCount += 1;
     }
