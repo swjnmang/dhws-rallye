@@ -6,6 +6,7 @@ import type { Group } from "@/lib/types";
 const TOP_N = 20;
 
 export type HighscoreEntry = {
+  eventId: string;
   groupId: string;
   name: string;
   className: string;
@@ -41,10 +42,11 @@ export async function GET() {
   const snap = await adminDb().collectionGroup("groups").get();
 
   const entries: HighscoreEntry[] = snap.docs
-    .map((d) => d.data() as Group)
-    .filter((g) => g.orgId === admin.orgId)
-    .filter((g) => g.finishedAt !== null && g.totalSeconds !== null && g.totalSeconds > 0)
-    .map((g) => ({
+    .map((d) => ({ group: d.data() as Group, eventId: d.ref.parent.parent!.id }))
+    .filter(({ group: g }) => g.orgId === admin.orgId && !g.hiddenFromHighscore)
+    .filter(({ group: g }) => g.finishedAt !== null && g.totalSeconds !== null && g.totalSeconds > 0)
+    .map(({ group: g, eventId }) => ({
+      eventId,
       groupId: g.id,
       name: g.name,
       className: g.className,

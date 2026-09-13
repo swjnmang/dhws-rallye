@@ -210,4 +210,8 @@ export type Group = {
   // confirmed reading. null (or not yet matching the event's current
   // broadcastMessage.id) means there's an unread message blocking play.
   ackedBroadcastId: string | null;
+  // Set by the org owner to exclude this group from the cross-rally
+  // /admin/highscore board (e.g. a joke/test entry) without touching its
+  // real results - the group's own event still shows it normally.
+  hiddenFromHighscore?: boolean;
 };
