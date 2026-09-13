@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase-client";
 import { saveGroupSession, getGroupSession, type GroupSession } from "@/lib/session";
+import type { RallyEvent } from "@/lib/types";
 
 export default function JoinForm({ initialCode }: { initialCode: string }) {
   const router = useRouter();
@@ -15,6 +18,11 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
   // accidental back-button press from /play) - if one's still saved, offer
   // to resume it instead of only showing a blank join form.
   const [existingSession, setExistingSession] = useState<GroupSession | null>(null);
+  // Whether the existing session's own rally has already finished - if so,
+  // the join-a-different-rally form below is pointless clutter (and its
+  // "Bereit" would just error anyway), so it's hidden in favor of just the
+  // "Zurück zum Spiel" box, which routes into /play's own end-of-rally view.
+  const [existingEventFinished, setExistingEventFinished] = useState(false);
 
   useEffect(() => {
     // Reading localStorage must happen after mount (it's unavailable during
@@ -23,6 +31,19 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setExistingSession(getGroupSession());
   }, []);
+
+  useEffect(() => {
+    if (!existingSession) return;
+    let cancelled = false;
+    getDoc(doc(db, "events", existingSession.eventId)).then((snap) => {
+      if (cancelled || !snap.exists()) return;
+      const event = snap.data() as RallyEvent;
+      if (event.status === "finished") setExistingEventFinished(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [existingSession]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,62 +94,64 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1 text-left">
-          <label htmlFor="code" className="text-sm font-medium text-slate-700">
-            Rallye-Code
-          </label>
-          <input
-            id="code"
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            required
-            maxLength={6}
-            placeholder="Z. B. AB12CD"
-            className="rounded-lg border border-slate-300 px-4 py-3 text-center text-2xl font-mono tracking-widest uppercase"
-          />
-        </div>
+      {!existingEventFinished && (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1 text-left">
+            <label htmlFor="code" className="text-sm font-medium text-slate-700">
+              Rallye-Code
+            </label>
+            <input
+              id="code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              required
+              maxLength={6}
+              placeholder="Z. B. AB12CD"
+              className="rounded-lg border border-slate-300 px-4 py-3 text-center text-2xl font-mono tracking-widest uppercase"
+            />
+          </div>
 
-        <div className="flex flex-col gap-1 text-left">
-          <label htmlFor="groupName" className="text-sm font-medium text-slate-700">
-            Gruppenname
-          </label>
-          <input
-            id="groupName"
-            value={groupName}
-            onChange={(e) => setGroupName(e.target.value)}
-            required
-            maxLength={40}
-            placeholder="Z. B. Die Adler"
-            className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
-          />
-        </div>
+          <div className="flex flex-col gap-1 text-left">
+            <label htmlFor="groupName" className="text-sm font-medium text-slate-700">
+              Gruppenname
+            </label>
+            <input
+              id="groupName"
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+              required
+              maxLength={40}
+              placeholder="Z. B. Die Adler"
+              className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+            />
+          </div>
 
-        <div className="flex flex-col gap-1 text-left">
-          <label htmlFor="className" className="text-sm font-medium text-slate-700">
-            Klasse
-          </label>
-          <input
-            id="className"
-            value={className}
-            onChange={(e) => setClassName(e.target.value)}
-            required
-            maxLength={20}
-            placeholder="Z. B. 5a"
-            className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
-          />
-        </div>
+          <div className="flex flex-col gap-1 text-left">
+            <label htmlFor="className" className="text-sm font-medium text-slate-700">
+              Klasse
+            </label>
+            <input
+              id="className"
+              value={className}
+              onChange={(e) => setClassName(e.target.value)}
+              required
+              maxLength={20}
+              placeholder="Z. B. 5a"
+              className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+            />
+          </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-xl bg-slate-900 px-6 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
-        >
-          {loading ? "Beitreten…" : "Bereit"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-xl bg-slate-900 px-6 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
+          >
+            {loading ? "Beitreten…" : "Bereit"}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
