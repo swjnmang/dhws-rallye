@@ -191,9 +191,15 @@ export type OrgInvite = {
   orgId: string;
   createdByUid: string;
   createdAt: number;
+  // "accepted" is a legacy value from when an invite was single-use - links
+  // created now stay "pending" (reusable by any number of people) until the
+  // owner revokes them.
   status: "pending" | "accepted" | "revoked";
+  // Most recent person to register through this link, if any - purely
+  // informational, doesn't affect whether the link still works.
   acceptedByUid: string | null;
   acceptedAt: number | null;
+  usedCount: number;
 };
 
 export type Group = {

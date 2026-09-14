@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireSession, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import type { AppUser, OrgInvite } from "@/lib/types";
 
-// Consumes an invite, joining the caller into that org as an active member
-// immediately - skipping the normal request-and-approve flow. Deliberately
-// doesn't require email verification (see requireSession): this runs right
-// at registration time, before the invitee has clicked their verification
-// link, and setting org membership has no effect until they do anyway
-// (the protected layout still gates everything else on it).
+// Joins the caller into the invite's org as an active member immediately -
+// skipping the normal request-and-approve flow. The invite itself is NOT
+// consumed: it stays "pending" (reusable by any number of people) until the
+// owner explicitly revokes it - only usedCount/acceptedByUid/acceptedAt are
+// updated, purely for the owner's own information.
 export async function POST(_request: Request, { params }: { params: Promise<{ token: string }> }) {
   let uid: string;
   try {
@@ -47,7 +47,11 @@ export async function POST(_request: Request, { params }: { params: Promise<{ to
     { merge: true }
   );
   await inviteRef.set(
-    { status: "accepted", acceptedByUid: uid, acceptedAt: Date.now() },
+    {
+      acceptedByUid: uid,
+      acceptedAt: Date.now(),
+      usedCount: FieldValue.increment(1),
+    },
     { merge: true }
   );
 

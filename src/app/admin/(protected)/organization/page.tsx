@@ -445,6 +445,12 @@ export default function OrganizationPage() {
                         month: "2-digit",
                         year: "numeric",
                       })}
+                      {invite.usedCount > 0 && (
+                        <span className="text-slate-400">
+                          {" "}
+                          · {invite.usedCount}× genutzt
+                        </span>
+                      )}
                     </span>
                     <div className="flex items-center gap-4">
                       <button

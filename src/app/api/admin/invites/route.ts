@@ -31,10 +31,11 @@ export async function GET() {
   return NextResponse.json({ invites });
 }
 
-// Creates a shareable invite link the owner hands to someone directly (no
-// automatic email sending) - whoever holds the link joins the org as an
-// active member immediately on registration/login, skipping the normal
-// request-and-approve flow.
+// Creates a shareable invite link the owner hands out directly (no
+// automatic email sending) - reusable by any number of people, each of whom
+// joins the org as an active member immediately on registration, skipping
+// the normal request-and-approve flow. Stays valid until the owner revokes
+// it (see DELETE /api/admin/invites/[inviteId]).
 export async function POST(request: Request) {
   let admin;
   try {
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
     status: "pending",
     acceptedByUid: null,
     acceptedAt: null,
+    usedCount: 0,
   };
   await adminDb().collection("orgInvites").doc(id).set(invite);
 
