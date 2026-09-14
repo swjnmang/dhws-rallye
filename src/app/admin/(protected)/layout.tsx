@@ -7,11 +7,13 @@ import type { AppUser } from "@/lib/types";
 import type { DecodedIdToken } from "firebase-admin/auth";
 
 // Gates every route below this segment behind a real login: no session ->
-// /admin/login, unverified email -> /admin/verify-email. Org membership is
-// not a gate here - it's an optional layer managed from
-// /admin/organization, reachable once you're already using the app. Sits
-// outside this group so login/register/verify-email themselves don't get
-// caught in the same redirect loop.
+// /admin/login. Email verification is not required to use the app (Firebase
+// verification emails aren't reliably delivered in this project's setup, and
+// blocking registration on them left invited teachers stuck). Org
+// membership is not a gate here either - it's an optional layer managed
+// from /admin/organization, reachable once you're already using the app.
+// Sits outside this group so login/register themselves don't get caught in
+// the same redirect loop.
 //
 // Also resolves the full AdminSummary (org, role, pending count) once here
 // and hands it down via AdminIdentityProvider, so pages/AdminHeader below
@@ -29,8 +31,6 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
   } catch {
     redirect("/admin/login");
   }
-
-  if (!decoded.email_verified) redirect("/admin/verify-email");
 
   const userDoc = await adminDb().collection("users").doc(decoded.uid).get();
   const user = userDoc.data() as AppUser | undefined;

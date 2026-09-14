@@ -49,21 +49,14 @@ export async function requireSession(): Promise<VerifiedIdentity> {
   }
 }
 
-// Same as requireSession, plus requires the email to be confirmed - the
-// bare minimum to act as yourself for everything else.
+// Historically also required a confirmed email on top of requireSession -
+// dropped because Firebase verification emails aren't reliably delivered in
+// this project's setup, which left invited teachers stuck unable to ever
+// pass this check. Kept as its own name (rather than replaced with
+// requireSession everywhere) since callers use it to mean "must be logged
+// in to use the app".
 export async function requireVerifiedUser(): Promise<VerifiedIdentity> {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
-  if (!sessionCookie) throw new AdminAuthError();
-
-  try {
-    const decoded = await adminAuth().verifySessionCookie(sessionCookie, true);
-    if (!decoded.email_verified) throw new AdminAuthError();
-    return { uid: decoded.uid, email: decoded.email ?? "" };
-  } catch (err) {
-    if (err instanceof AdminAuthError) throw err;
-    throw new AdminAuthError();
-  }
+  return requireSession();
 }
 
 export type AdminIdentity = {

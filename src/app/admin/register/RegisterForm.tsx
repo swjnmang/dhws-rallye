@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
 
 function firebaseErrorMessage(code: string): string {
@@ -47,7 +47,6 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
 
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
-      await sendEmailVerification(credential.user);
       const idToken = await credential.user.getIdToken();
 
       const [loginRes, membershipRes] = await Promise.all([
@@ -73,7 +72,7 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
         await fetch(`/api/invites/${invite}/accept`, { method: "POST" }).catch(() => {});
       }
 
-      router.push("/admin/verify-email");
+      router.push("/admin/events");
       router.refresh();
     } catch (err) {
       const code = err instanceof Error && "code" in err ? String((err as { code: string }).code) : "";
