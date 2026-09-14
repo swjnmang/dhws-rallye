@@ -24,6 +24,7 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [inviteOrgName, setInviteOrgName] = useState<string | null>(null);
@@ -42,9 +43,14 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
+    if (password !== passwordConfirm) {
+      setError("Die Passwörter stimmen nicht überein.");
+      return;
+    }
+
+    setLoading(true);
     try {
       const credential = await createUserWithEmailAndPassword(auth, email, password);
       const idToken = await credential.user.getIdToken();
@@ -116,6 +122,13 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Passwort (mind. 6 Zeichen)"
+          className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+        />
+        <input
+          type="password"
+          value={passwordConfirm}
+          onChange={(e) => setPasswordConfirm(e.target.value)}
+          placeholder="Passwort wiederholen"
           className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
         />
         {error && <p className="text-sm text-red-600">{error}</p>}
