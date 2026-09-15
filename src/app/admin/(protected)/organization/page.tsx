@@ -101,7 +101,7 @@ export default function OrganizationPage() {
     const res = await fetch(`/api/orgs/${orgId}/join`, { method: "POST" });
     setBusy(false);
     if (!res.ok) {
-      setError("Beitrittsanfrage konnte nicht gesendet werden.");
+      setError("Beitritt konnte nicht abgeschlossen werden.");
       return;
     }
     setMode("choice");

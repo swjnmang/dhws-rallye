@@ -97,9 +97,15 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
           setLoading(false);
           return;
         }
+        router.push("/admin/events");
+        router.refresh();
+        return;
       }
 
-      router.push("/admin/events");
+      // No invite - ask right away whether to join an existing org or found
+      // a new one, instead of dropping them on /admin/events first with a
+      // "you're org-less" banner they'd have to notice and click through.
+      router.push("/admin/organization");
       router.refresh();
     } catch (err) {
       const code = err instanceof Error && "code" in err ? String((err as { code: string }).code) : "";
