@@ -23,6 +23,7 @@ export default function EventOverviewPage({
   const [groups, setGroups] = useState<Group[]>([]);
   const [puzzleCount, setPuzzleCount] = useState(0);
   const [joinInfo, setJoinInfo] = useState<{ url: string; qrDataUrl: string } | null>(null);
+  const [showJoinInfo, setShowJoinInfo] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -242,6 +243,32 @@ export default function EventOverviewPage({
               <img src={joinInfo.qrDataUrl} alt="QR-Code zum Beitreten" className="h-48 w-48" />
             )}
             <p className="break-all text-sm text-slate-500">{joinInfo?.url}</p>
+          </section>
+        )}
+
+        {event.status === "active" && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setShowJoinInfo((v) => !v)}
+              className="text-sm font-medium text-slate-700 hover:text-slate-900 hover:underline"
+            >
+              {showJoinInfo ? "Beitritts-Code ausblenden" : "Beitritts-Code anzeigen"}
+            </button>
+            {showJoinInfo && (
+              <div className="mt-4 flex flex-col items-center gap-4 text-center">
+                <p className="text-sm text-slate-500">
+                  Falls eine Gruppe den Browser versehentlich geschlossen hat: erneut scannen oder den
+                  Code eingeben, um zurück ins laufende Spiel zu kommen.
+                </p>
+                <p className="font-mono text-4xl font-bold tracking-widest">{event.joinCode}</p>
+                {joinInfo && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={joinInfo.qrDataUrl} alt="QR-Code zum Beitreten" className="h-48 w-48" />
+                )}
+                <p className="break-all text-sm text-slate-500">{joinInfo?.url}</p>
+              </div>
+            )}
           </section>
         )}
 

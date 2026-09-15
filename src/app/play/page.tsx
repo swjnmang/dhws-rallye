@@ -75,6 +75,24 @@ export default function PlayPage() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [session, router]);
 
+  // Closing/reloading the tab doesn't actually drop the group (their session
+  // is in localStorage, not lost) - but a group that does this mid-rally has
+  // no way to know that, and re-finding the join code/QR to get back in is
+  // real friction. Ask for confirmation instead, same as the popstate guard
+  // above. Browsers ignore the custom message text and show their own
+  // generic prompt, but still require preventDefault()/returnValue to show
+  // any prompt at all. Skipped once the rally is finished - there's nothing
+  // left to lose by then.
+  useEffect(() => {
+    if (!session || !event || event.status === "finished") return;
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [session, event]);
+
   useEffect(() => {
     if (!session) return;
     const eventRef = doc(db, "events", session.eventId);
