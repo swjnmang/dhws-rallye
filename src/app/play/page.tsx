@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, doc, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase-client";
@@ -212,6 +212,32 @@ export default function PlayPage() {
     () => hotspots.filter((h) => h.floorId === selectedFloorId),
     [hotspots, selectedFloorId]
   );
+
+  // Advances to the next floor the moment every puzzle on the current one is
+  // solved - a group with the map should never have to notice and switch
+  // tabs manually. Fires at most once per floor per page load (tracked in
+  // this ref, not state, since it must not itself trigger a re-render) so a
+  // group that taps back to a completed floor to review it isn't immediately
+  // bounced forward again. Hotspots without a puzzle attached (a station
+  // still being set up) don't count either way - there's nothing to solve
+  // there, so they can't block the floor from completing.
+  const autoAdvancedFloorsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!group || group.finishedAt || !selectedFloorId || allFloors.length === 0) return;
+    if (autoAdvancedFloorsRef.current.has(selectedFloorId)) return;
+    const solvableHotspots = floorHotspots.filter((h) => h.puzzleId);
+    if (solvableHotspots.length === 0) return;
+    const floorComplete = solvableHotspots.every((h) => group.solved[h.puzzleId!]);
+    if (!floorComplete) return;
+
+    autoAdvancedFloorsRef.current.add(selectedFloorId);
+    const currentIndex = allFloors.findIndex((f) => f.id === selectedFloorId);
+    const nextFloor = allFloors[currentIndex + 1];
+    if (nextFloor) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSelectedFloorId(nextFloor.id);
+    }
+  }, [group, selectedFloorId, allFloors, floorHotspots]);
 
   const activeHotspot = hotspots.find((h) => h.id === activeHotspotId) ?? null;
   const activePuzzle = activeHotspot?.puzzleId ? puzzles[activeHotspot.puzzleId] : null;
