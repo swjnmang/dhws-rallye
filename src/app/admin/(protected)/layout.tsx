@@ -59,5 +59,9 @@ export default async function ProtectedAdminLayout({ children }: { children: Rea
         pendingCount: 0,
       };
 
-  return <AdminIdentityProvider value={summary}>{children}</AdminIdentityProvider>;
+  return (
+    <AdminIdentityProvider value={summary}>
+      <div className="flex flex-1 flex-col bg-slate-100">{children}</div>
+    </AdminIdentityProvider>
+  );
 }

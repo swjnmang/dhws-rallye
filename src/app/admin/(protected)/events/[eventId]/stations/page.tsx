@@ -38,7 +38,7 @@ export default function EventStationsPage({
           <button
             onClick={handleSaveAsTemplate}
             disabled={savingTemplate}
-            className="shrink-0 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500 disabled:opacity-50"
+            className="shrink-0 rounded-lg border-2 border-ink px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500 disabled:opacity-50"
           >
             {savingTemplate ? "Speichert…" : "Als Vorlage speichern"}
           </button>

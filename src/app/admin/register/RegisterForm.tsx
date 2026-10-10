@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase-client";
+import BrandMark from "@/components/BrandMark";
 
 function firebaseErrorMessage(code: string): string {
   switch (code) {
@@ -88,62 +89,72 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
-      <h1 className="text-2xl font-bold">Als Rallyleiter:in registrieren</h1>
+    <main className="ol-north flex flex-1 flex-col items-center justify-center gap-8 px-6 py-16">
+      <Link href="/" aria-label="Zur Startseite">
+        <BrandMark />
+      </Link>
+      <h1 className="font-display text-4xl font-extrabold uppercase leading-none">Als Rallyleiter:in registrieren</h1>
       {inviteOrgName && (
-        <p className="-mt-4 max-w-sm text-center text-sm text-slate-600">
+        <p className="-mt-4 max-w-sm text-center text-base text-slate-700">
           Du wurdest eingeladen, <span className="font-semibold">{inviteOrgName}</span> beizutreten.
           Nach der Registrierung wirst du direkt Mitglied.
         </p>
       )}
       {inviteInvalid && (
-        <p className="-mt-4 max-w-sm text-center text-sm text-amber-700">
+        <p className="-mt-4 max-w-sm text-center text-base font-medium text-amber-700">
           Dieser Einladungslink ist nicht mehr gültig. Du kannst dich trotzdem normal registrieren.
         </p>
       )}
-      <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-2 border-ink bg-white p-6"
+      >
         <input
           type="text"
           autoFocus
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="Name"
-          className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+          aria-label="Name"
+          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
         />
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="E-Mail-Adresse"
-          className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+          aria-label="E-Mail-Adresse"
+          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
         />
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Passwort (mind. 6 Zeichen)"
-          className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+          aria-label="Passwort (mind. 6 Zeichen)"
+          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
         />
         <input
           type="password"
           value={passwordConfirm}
           onChange={(e) => setPasswordConfirm(e.target.value)}
           placeholder="Passwort wiederholen"
-          className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+          aria-label="Passwort wiederholen"
+          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
         />
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-base font-medium text-red-700">{error}</p>}
         <button
           type="submit"
           disabled={loading}
-          className="rounded-xl bg-slate-900 px-6 py-3 text-lg font-semibold text-white disabled:opacity-50"
+          className="min-h-15 rounded-xl border-2 border-ink bg-signal px-6 font-display text-2xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400 disabled:opacity-50"
         >
           {loading ? "Registriert…" : "Registrieren"}
         </button>
-        <p className="text-center text-sm text-slate-500">
+        <p className="text-center text-base text-slate-600">
           Bereits registriert?{" "}
           <Link
             href={invite ? `/admin/login?invite=${invite}` : "/admin/login"}
-            className="font-medium text-slate-900 hover:underline"
+            className="font-semibold text-course underline-offset-4 hover:underline"
           >
             Anmelden
           </Link>

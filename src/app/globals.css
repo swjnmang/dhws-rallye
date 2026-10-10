@@ -1,26 +1,132 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Design „Orientierungslauf": präzise wie eine OL-Karte. Tinte (#1B1B1F) auf
+ * Weiß, Violett (#8E2A85, die Bahnfarbe einer OL-Karte) für Gelöstes und
+ * Signal-Orange (#F05A1A, die Postenflagge) für Auswahl und Hauptaktionen.
+ *
+ * Die Tailwind-Paletten, die die App schon benutzt, werden hier auf diese
+ * Farben umgebogen, damit jede Seite automatisch im selben Look erscheint:
+ * slate = neutrale Tinten-Grautöne, emerald/indigo = Violett (gelöst),
+ * amber = Signal-Orange.
+ */
+@theme {
+  --color-ink: #1b1b1f;
+  --color-course: #8e2a85;
+  --color-course-soft: #f3e4f1;
+  --color-signal: #f05a1a;
+  --color-signal-soft: #ffe6d9;
+  --color-signal-ink: #b23c0a;
+
+  --color-slate-50: #f7f7f8;
+  --color-slate-100: #efeff2;
+  --color-slate-200: #dadae0;
+  --color-slate-300: #c3c3cb;
+  --color-slate-400: #85858f;
+  --color-slate-500: #66666f;
+  --color-slate-600: #55555e;
+  --color-slate-700: #3a3a42;
+  --color-slate-800: #26262c;
+  --color-slate-900: #1b1b1f;
+  --color-slate-950: #111114;
+
+  --color-emerald-50: #f8eef6;
+  --color-emerald-100: #f3e4f1;
+  --color-emerald-200: #e6c6e2;
+  --color-emerald-300: #d49bcd;
+  --color-emerald-400: #bc66b2;
+  --color-emerald-500: #a43a99;
+  --color-emerald-600: #8e2a85;
+  --color-emerald-700: #74226c;
+  --color-emerald-800: #5e1a58;
+  --color-emerald-900: #4a1545;
+
+  --color-indigo-50: #f8eef6;
+  --color-indigo-100: #f3e4f1;
+  --color-indigo-200: #e6c6e2;
+  --color-indigo-300: #d49bcd;
+  --color-indigo-400: #bc66b2;
+  --color-indigo-500: #a43a99;
+  --color-indigo-600: #8e2a85;
+  --color-indigo-700: #74226c;
+
+  --color-amber-50: #fff1ea;
+  --color-amber-100: #ffe6d9;
+  --color-amber-200: #ffc9ae;
+  --color-amber-300: #ffa97f;
+  --color-amber-400: #f5793d;
+  --color-amber-500: #f05a1a;
+  --color-amber-600: #c9470f;
+  --color-amber-700: #b23c0a;
+  --color-amber-800: #8a2e08;
+  --color-amber-900: #6b2406;
+
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.75rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-barlow), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-barlow-condensed), var(--font-barlow), ui-sans-serif, sans-serif;
+  --font-mono: var(--font-barlow-condensed), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background: #ffffff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  h3 {
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-signal);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Die Nordlinien einer OL-Karte als Hintergrund hinter Grundrissen. */
+  .ol-north {
+    background-color: #ffffff;
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgb(74 123 214 / 0.18) 0 1px,
+      transparent 1px 96px
+    );
+  }
+
+  .ol-north-dark {
+    background-image: repeating-linear-gradient(
+      90deg,
+      rgb(120 160 235 / 0.22) 0 1px,
+      transparent 1px 72px
+    );
+  }
+
+  /* Die Postenflagge: diagonal geteilt in Weiß und Signal-Orange. */
+  .ol-flag {
+    background: linear-gradient(135deg, #ffffff 50%, var(--color-signal) 50%);
+  }
+
+  .ol-kicker {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-slate-600);
+  }
 }

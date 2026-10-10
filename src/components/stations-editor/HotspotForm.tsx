@@ -180,12 +180,12 @@ export default function HotspotForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4">
       <form
         onSubmit={handleSave}
-        className="flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        className="flex max-h-[85vh] w-full max-w-lg flex-col gap-4 overflow-y-auto rounded-xl border-[3px] border-ink bg-white p-6 shadow-xl"
       >
-        <h2 className="text-lg font-bold">
+        <h2 className="font-display text-2xl font-extrabold uppercase">
           {existing
             ? `Raum #${existing.hotspot.number} bearbeiten`
             : "Neuen Raum anlegen"}
@@ -197,7 +197,7 @@ export default function HotspotForm({
             required
             value={roomName}
             onChange={(e) => setRoomName(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2"
+            className="rounded-lg border-2 border-ink px-3 py-2"
           />
         </div>
 
@@ -213,7 +213,7 @@ export default function HotspotForm({
               min={5}
               value={radiusMeters}
               onChange={(e) => setRadiusMeters(Number(e.target.value))}
-              className="rounded-lg border border-slate-300 px-3 py-2"
+              className="rounded-lg border-2 border-ink px-3 py-2"
             />
             <p className="text-xs text-slate-500">
               GPS ist im Freien meist auf ca. 10–20 m genau – ein kleinerer Radius kann die Gruppen frustrieren.
@@ -228,7 +228,7 @@ export default function HotspotForm({
               type="button"
               onClick={() => setType("mc")}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                type === "mc" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+                type === "mc" ? "border-slate-900 bg-slate-900 text-white" : "border-ink"
               }`}
             >
               Multiple-Choice
@@ -237,7 +237,7 @@ export default function HotspotForm({
               type="button"
               onClick={() => setType("text")}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                type === "text" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+                type === "text" ? "border-slate-900 bg-slate-900 text-white" : "border-ink"
               }`}
             >
               Texteingabe
@@ -246,7 +246,7 @@ export default function HotspotForm({
               type="button"
               onClick={() => setType("number")}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                type === "number" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+                type === "number" ? "border-slate-900 bg-slate-900 text-white" : "border-ink"
               }`}
             >
               Zahl
@@ -255,7 +255,7 @@ export default function HotspotForm({
               type="button"
               onClick={() => setType("jigsaw")}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                type === "jigsaw" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+                type === "jigsaw" ? "border-slate-900 bg-slate-900 text-white" : "border-ink"
               }`}
             >
               Bildpuzzle
@@ -264,7 +264,7 @@ export default function HotspotForm({
               type="button"
               onClick={() => setType("pdf")}
               className={`flex-1 rounded-lg border px-3 py-2 text-sm font-medium ${
-                type === "pdf" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300"
+                type === "pdf" ? "border-slate-900 bg-slate-900 text-white" : "border-ink"
               }`}
             >
               PDF-Dokument
@@ -279,7 +279,7 @@ export default function HotspotForm({
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             rows={2}
-            className="rounded-lg border border-slate-300 px-3 py-2"
+            className="rounded-lg border-2 border-ink px-3 py-2"
           />
         </div>
 
@@ -300,7 +300,7 @@ export default function HotspotForm({
                   value={option}
                   onChange={(e) => updateOption(index, e.target.value)}
                   placeholder={`Option ${index + 1}`}
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2"
+                  className="flex-1 rounded-lg border-2 border-ink px-3 py-2"
                 />
               </div>
             ))}
@@ -314,7 +314,7 @@ export default function HotspotForm({
               inputMode="numeric"
               value={correctNumber}
               onChange={(e) => setCorrectNumber(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2"
+              className="rounded-lg border-2 border-ink px-3 py-2"
             />
           </div>
         ) : type === "jigsaw" ? (
@@ -323,7 +323,7 @@ export default function HotspotForm({
             <select
               value={jigsawSize}
               onChange={(e) => setJigsawSize(Number(e.target.value))}
-              className="rounded-lg border border-slate-300 px-3 py-2"
+              className="rounded-lg border-2 border-ink px-3 py-2"
             >
               {[2, 3, 4, 5].map((size) => (
                 <option key={size} value={size}>
@@ -343,7 +343,7 @@ export default function HotspotForm({
               required
               value={correctText}
               onChange={(e) => setCorrectText(e.target.value)}
-              className="rounded-lg border border-slate-300 px-3 py-2"
+              className="rounded-lg border-2 border-ink px-3 py-2"
             />
             {type === "pdf" && (
               <p className="text-xs text-slate-500">
@@ -425,7 +425,7 @@ export default function HotspotForm({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700"
+              className="rounded-lg border-2 border-ink px-4 py-2 font-medium text-slate-700"
             >
               Abbrechen
             </button>

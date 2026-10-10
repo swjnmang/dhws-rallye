@@ -57,7 +57,7 @@ export default function ScreenshotSlider() {
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm">
+      <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xl border-2 border-ink bg-slate-100">
         {SLIDES.map((slide, i) => (
           <div
             key={slide.key}
@@ -73,16 +73,16 @@ export default function ScreenshotSlider() {
                 {INTRO_STEPS.map((step, stepIndex) => (
                   <Fragment key={step.label}>
                     <div className="flex flex-col items-center gap-1 text-center sm:gap-2 sm:max-w-[9rem]">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-bold text-white sm:h-9 sm:w-9 sm:text-sm">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[3px] border-course bg-white font-display text-xs font-extrabold text-course sm:h-10 sm:w-10 sm:text-base">
                         {stepIndex + 1}
                       </span>
                       <div>
-                        <p className="text-xs font-semibold text-slate-900 sm:text-base">{step.label}</p>
-                        <p className="hidden text-xs text-slate-500 sm:block">{step.detail}</p>
+                        <p className="font-display text-sm font-bold uppercase text-ink sm:text-lg">{step.label}</p>
+                        <p className="hidden text-sm text-slate-600 sm:block">{step.detail}</p>
                       </div>
                     </div>
                     {stepIndex < INTRO_STEPS.length - 1 && (
-                      <span className="text-slate-300" aria-hidden>
+                      <span className="text-course" aria-hidden>
                         →
                       </span>
                     )}
@@ -92,7 +92,7 @@ export default function ScreenshotSlider() {
             )}
           </div>
         ))}
-        <p className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-4 pb-3 pt-8 text-left text-sm font-medium text-white">
+        <p className="absolute inset-x-0 bottom-0 border-t-2 border-ink bg-ink px-4 py-2.5 text-left text-base font-medium text-white">
           {SLIDES[index].caption}
         </p>
 
@@ -100,7 +100,7 @@ export default function ScreenshotSlider() {
           type="button"
           onClick={() => goTo(index - 1)}
           aria-label="Vorheriges Bild"
-          className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-slate-800 shadow-sm transition hover:bg-white"
+          className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-ink bg-white text-xl font-bold text-ink transition hover:bg-slate-100"
         >
           ‹
         </button>
@@ -108,7 +108,7 @@ export default function ScreenshotSlider() {
           type="button"
           onClick={() => goTo(index + 1)}
           aria-label="Nächstes Bild"
-          className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-slate-800 shadow-sm transition hover:bg-white"
+          className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border-2 border-ink bg-white text-xl font-bold text-ink transition hover:bg-slate-100"
         >
           ›
         </button>
@@ -122,7 +122,7 @@ export default function ScreenshotSlider() {
             onClick={() => goTo(i)}
             aria-label={`Bild ${i + 1} von ${SLIDES.length} anzeigen`}
             className={`h-2 rounded-full transition-all ${
-              i === index ? "w-6 bg-slate-900" : "w-2 bg-slate-300"
+              i === index ? "w-6 bg-ink" : "w-2 bg-slate-300"
             }`}
           />
         ))}

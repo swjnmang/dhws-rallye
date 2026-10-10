@@ -28,9 +28,9 @@ export default function ConfirmDeleteByName({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
-        <h2 className="text-lg font-bold">{itemLabel} löschen</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4">
+      <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-[3px] border-ink bg-white p-6 shadow-xl">
+        <h2 className="font-display text-2xl font-extrabold uppercase">{itemLabel} löschen</h2>
         <p className="text-sm text-slate-600">
           Das kann nicht rückgängig gemacht werden. Tippt zur Bestätigung den Namen{" "}
           <span className="font-semibold text-slate-900">&bdquo;{itemName}&ldquo;</span> ein:
@@ -40,21 +40,21 @@ export default function ConfirmDeleteByName({
           value={typed}
           onChange={(e) => setTyped(e.target.value)}
           placeholder={itemName}
-          className="rounded-lg border border-slate-300 px-3 py-2"
+          className="h-12 rounded-lg border-2 border-ink px-3 focus:border-signal focus:outline-none"
         />
         <div className="mt-2 flex gap-2">
           <button
             type="button"
             onClick={handleConfirm}
             disabled={!matches || deleting}
-            className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white disabled:opacity-40"
+            className="min-h-12 rounded-lg border-2 border-ink bg-red-700 px-4 font-semibold text-white disabled:opacity-40"
           >
             {deleting ? "Löscht…" : "Endgültig löschen"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700"
+            className="min-h-12 rounded-lg border-2 border-ink bg-white px-4 font-semibold text-ink"
           >
             Abbrechen
           </button>

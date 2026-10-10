@@ -253,19 +253,22 @@ export default function PlayPage() {
   if (session === undefined || session === null || !event || !group) {
     return (
       <main className="flex flex-1 items-center justify-center">
-        <p className="text-slate-500">Lade Rallye…</p>
+        <p className="ol-kicker">Lade Rallye…</p>
       </main>
     );
   }
 
   if (event.status === "draft") {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-        <h1 className="text-3xl font-bold">Ihr seid bereit, {session.groupName}! ⏳</h1>
-        <p className="text-slate-600">
+      <main className="ol-north flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
+        <span aria-hidden className="ol-flag h-16 w-16 rounded-md border-[3px] border-ink" />
+        <h1 className="font-display text-5xl font-extrabold uppercase leading-none">
+          Ihr seid bereit, {session.groupName}!
+        </h1>
+        <p className="text-xl text-slate-700">
           Klasse {session.className} · wartet auf den Start durch die Lehrkraft …
         </p>
-        <p className="text-sm text-slate-400">
+        <p className="text-base text-slate-500">
           Diese Seite aktualisiert sich automatisch, sobald es losgeht.
         </p>
       </main>
@@ -274,50 +277,98 @@ export default function PlayPage() {
 
   if (event.status === "finished") {
     const ranked = sortGroupsByRank(allGroups);
+    const ownIndex = ranked.findIndex((g) => g.id === session.groupId);
     return (
-      <main className="flex flex-1 flex-col items-center gap-6 px-6 py-10">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Die Rally ist vorbei! 🏁</h1>
-          <p className="mt-1 text-slate-600">Hier ist der Endstand aller Gruppen.</p>
-        </div>
-        <ol className="flex w-full max-w-md flex-col gap-2">
-          {ranked.map((g, index) => {
-            const isOwn = g.id === session.groupId;
-            const finished = g.finishedAt != null;
-            const groupSolvedCount = Object.keys(g.solved).length;
-            return (
-              <li
-                key={g.id}
-                className={`flex items-center justify-between rounded-xl border px-4 py-3 ${
-                  isOwn ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="w-6 text-center text-sm font-bold text-slate-400">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="font-semibold text-slate-900">
-                      {g.name} {isOwn && <span className="text-emerald-600">(ihr)</span>}
-                    </p>
-                    <p className="text-xs text-slate-500">Klasse {g.className}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  {finished ? (
-                    <p className="font-mono font-bold tabular-nums">
-                      {formatDuration(g.totalSeconds ?? 0)}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-slate-500">
-                      {groupSolvedCount} / {totalPuzzles} gelöst
-                    </p>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
+      <main className="flex flex-1 flex-col lg:flex-row">
+        <aside className="flex flex-col gap-7 bg-ink px-8 py-10 text-white lg:w-[380px] lg:shrink-0 lg:px-10 lg:py-12">
+          <p className="font-display text-sm font-bold uppercase tracking-[0.12em] text-slate-300">
+            Ziel erreicht
+          </p>
+          <h1 className="font-display text-5xl font-extrabold uppercase leading-[0.92] lg:text-6xl">
+            Die Rallye ist vorbei!
+          </h1>
+          <div className="flex flex-col gap-4 rounded-xl border-2 border-white p-5">
+            <p className="text-lg font-semibold">
+              {session.groupName} · {session.className}
+            </p>
+            {ownIndex >= 0 && (
+              <p className="flex items-baseline gap-3">
+                <span className="font-display text-7xl font-extrabold leading-[0.8] text-amber-300">
+                  {ownIndex + 1}.
+                </span>
+                <span className="text-lg text-slate-300">von {ranked.length} Gruppen</span>
+              </p>
+            )}
+            <dl className="grid grid-cols-3 gap-2">
+              <div>
+                <dt className="text-sm text-slate-300">Gelöst</dt>
+                <dd className="font-display text-3xl font-extrabold">
+                  {solvedCount}/{totalPuzzles}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-slate-300">XP</dt>
+                <dd className="font-display text-3xl font-extrabold">{group.xp ?? 0}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-slate-300">Zeit</dt>
+                <dd className="font-display text-3xl font-extrabold tabular-nums">
+                  {group.finishedAt ? formatDuration(group.totalSeconds ?? 0) : "–"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </aside>
+
+        <section className="flex flex-1 flex-col gap-5 px-6 py-10 lg:px-11 lg:py-12">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="font-display text-4xl font-extrabold uppercase">Ergebnisliste</h2>
+            <p className="text-base text-slate-600">{event.name}</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[520px] border-collapse text-lg">
+              <thead>
+                <tr className="border-b-[3px] border-ink text-left">
+                  <th className="ol-kicker w-16 px-2 py-2.5">Platz</th>
+                  <th className="ol-kicker px-2 py-2.5">Gruppe</th>
+                  <th className="ol-kicker px-2 py-2.5">Klasse</th>
+                  <th className="ol-kicker px-2 py-2.5 text-right">Gelöst</th>
+                  <th className="ol-kicker px-2 py-2.5 text-right">Zeit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ranked.map((g, index) => {
+                  const isOwn = g.id === session.groupId;
+                  const finished = g.finishedAt != null;
+                  return (
+                    <tr
+                      key={g.id}
+                      className={`h-15 border-b border-slate-200 ${isOwn ? "bg-signal-soft" : ""}`}
+                    >
+                      <td
+                        className={`px-2 font-display text-2xl font-extrabold ${
+                          index < 3 ? "text-course" : ""
+                        }`}
+                      >
+                        {index + 1}.
+                      </td>
+                      <td className="px-2 font-semibold">
+                        {g.name} {isOwn && <span className="font-bold text-course">(ihr)</span>}
+                      </td>
+                      <td className="px-2 text-slate-700">{g.className}</td>
+                      <td className="px-2 text-right tabular-nums">
+                        {Object.keys(g.solved).length} / {totalPuzzles}
+                      </td>
+                      <td className="px-2 text-right font-bold tabular-nums">
+                        {finished ? formatDuration(g.totalSeconds ?? 0) : "–"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </main>
     );
   }
@@ -332,16 +383,22 @@ export default function PlayPage() {
 
   if (!session.introSeen && !group.finishedAt) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
-        <h1 className="text-3xl font-bold">Los geht&apos;s, {session.groupName}! 🚀</h1>
-        <div className="flex max-w-md flex-col gap-3 text-left text-slate-600">
-          <p>🗺️ Erkundet die Stationen und findet die Rätsel.</p>
-          <p>⏱️ Die Zeit läuft ab jetzt – je schneller ihr fertig seid, desto besser.</p>
-          <p>⭐ Für jedes gelöste Rätsel gibt es Erfahrungspunkte (XP).</p>
-        </div>
+      <main className="ol-north flex flex-1 flex-col items-center justify-center gap-8 px-6 py-10 text-center">
+        <h1 className="font-display text-5xl font-extrabold uppercase leading-none sm:text-6xl">
+          Los geht&apos;s, {session.groupName}!
+        </h1>
+        <ul className="flex max-w-lg flex-col gap-3 text-left text-lg text-slate-700">
+          <IntroLine icon={<MapIcon />}>Erkundet die Stationen und findet die Rätsel.</IntroLine>
+          <IntroLine icon={<ClockIcon />}>
+            Die Zeit läuft ab jetzt – je schneller ihr fertig seid, desto besser.
+          </IntroLine>
+          <IntroLine icon={<StarIcon />}>
+            Für jedes gelöste Rätsel gibt es Erfahrungspunkte (XP).
+          </IntroLine>
+        </ul>
         <button
           onClick={handleStartPlaying}
-          className="rounded-xl bg-emerald-600 px-8 py-4 text-lg font-semibold text-white"
+          className="min-h-17 rounded-xl border-2 border-ink bg-signal px-12 font-display text-3xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400"
         >
           Los geht&apos;s!
         </button>
@@ -352,25 +409,23 @@ export default function PlayPage() {
   if (group.finishedAt) {
     return (
       <>
-        <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 text-center">
-          <h1 className="text-3xl font-bold">Geschafft, {session.groupName}! 🎉</h1>
-          <p className="text-slate-600">Ihr habt alle Rätsel gelöst.</p>
-          <p className="text-5xl font-mono font-bold tabular-nums">
+        <main className="ol-north flex flex-1 flex-col items-center justify-center gap-5 px-6 text-center">
+          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-course text-white">
+            <CheckIcon size={40} />
+          </span>
+          <h1 className="font-display text-5xl font-extrabold uppercase leading-none">
+            Geschafft, {session.groupName}!
+          </h1>
+          <p className="text-xl text-slate-700">Ihr habt alle Rätsel gelöst.</p>
+          <p className="font-display text-8xl font-extrabold tabular-nums">
             {formatDuration(group.totalSeconds ?? elapsedSeconds)}
           </p>
-          <p className="text-sm text-slate-500">
+          <p className="text-base text-slate-600">
             Eure Zeit wurde gespeichert – die Lehrkraft sieht sie live im Ranking.
           </p>
         </main>
 
-        {showCorrectPopup && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-600 px-8 py-6 text-center shadow-xl">
-              <p className="text-xl font-bold text-white">Super – eure Antwort war korrekt!</p>
-              <p className="text-lg font-semibold text-white">+ 5 XP</p>
-            </div>
-          </div>
-        )}
+        {showCorrectPopup && <CorrectPopup />}
 
         {pendingBroadcast && (
           <BroadcastOverlay
@@ -384,100 +439,195 @@ export default function PlayPage() {
   }
 
   const selectedFloor = allFloors.find((f) => f.id === selectedFloorId) ?? allFloors[0];
+  const isSolved = (hotspot: Hotspot) =>
+    hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false;
+  const sortedFloorHotspots = [...floorHotspots].sort((a, b) => a.number - b.number);
+  const floorSolvedCount = floorHotspots.filter(isSolved).length;
 
   return (
-    <main className="flex flex-1 flex-col">
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-white px-4 py-3">
-        <div>
-          <p className="text-sm text-slate-500">
+    <main className="flex h-dvh flex-col overflow-hidden">
+      <header className="flex flex-wrap items-center gap-x-6 gap-y-3 border-b-2 border-ink bg-white px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <p className="ol-kicker truncate">
             {session.groupName} · Klasse {session.className}
           </p>
-          <p className="text-sm font-medium text-slate-700">
-            {solvedCount} / {totalPuzzles} Rätsel gelöst · {group.xp ?? 0} XP
+          <p className="font-display text-2xl font-extrabold leading-none sm:text-[26px]">
+            {solvedCount} / {totalPuzzles} Rätsel{" "}
+            <span className="text-course">· {group.xp ?? 0} XP</span>
           </p>
         </div>
-        <p className="font-mono text-2xl font-bold tabular-nums">
-          {formatDuration(elapsedSeconds)}
-        </p>
-      </header>
 
-      {allFloors.length > 1 && (
-        <nav className="flex gap-2 overflow-x-auto border-b border-slate-200 bg-white px-4 py-2">
-          {allFloors.map((floor) => (
-            <button
-              key={floor.id}
-              onClick={() => setSelectedFloorId(floor.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium ${
-                floor.id === selectedFloorId
-                  ? "bg-slate-900 text-white"
-                  : "bg-slate-100 text-slate-700"
-              }`}
+        <div className="order-3 flex w-full min-w-0 justify-center lg:order-none lg:w-auto lg:flex-1">
+          {allFloors.length > 1 && (
+            <nav
+              aria-label="Stockwerk"
+              className="flex max-w-full overflow-x-auto rounded-xl border-2 border-ink"
             >
-              {floor.name}
-              {floor.kind === "map" && " 📍"}
-            </button>
-          ))}
-        </nav>
-      )}
-
-      <div className="relative flex-1 overflow-hidden bg-slate-100">
-        {selectedFloor.kind === "map" ? (
-          <PlayMapView
-            floor={selectedFloor as CustomFloor}
-            hotspots={floorHotspots}
-            isSolved={(hotspot) => (hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false)}
-            onOpenHotspot={(hotspotId) => setActiveHotspotId(hotspotId)}
-            onPositionUpdate={(lat, lng) => setCurrentPosition({ lat, lng })}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <div className="relative max-h-full max-w-full">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={selectedFloor.imagePath!}
-                alt={selectedFloor.name}
-                className="block max-h-full max-w-full w-auto h-auto select-none"
-              />
-              {floorHotspots.map((hotspot) => {
-                const solved = hotspot.puzzleId ? !!group.solved[hotspot.puzzleId] : false;
+              {allFloors.map((floor, index) => {
+                const onFloor = hotspots.filter((h) => h.floorId === floor.id && h.puzzleId);
+                const solvedOnFloor = onFloor.filter(isSolved).length;
+                const selected = floor.id === selectedFloor.id;
                 return (
                   <button
-                    key={hotspot.id}
-                    onClick={() => !solved && setActiveHotspotId(hotspot.id)}
-                    style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
-                    className={`absolute flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold shadow-md ${
-                      solved
-                        ? "bg-emerald-500 text-white"
-                        : "bg-amber-400 text-white animate-pulse"
-                    }`}
-                    aria-label={hotspot.roomName}
+                    key={floor.id}
+                    onClick={() => setSelectedFloorId(floor.id)}
+                    aria-pressed={selected}
+                    className={`flex min-h-13 shrink-0 items-center gap-2 px-5 text-[17px] font-semibold transition ${
+                      index > 0 ? "border-l-2 border-ink" : ""
+                    } ${selected ? "bg-ink text-white" : "bg-white text-ink hover:bg-slate-100"}`}
                   >
-                    {solved ? "✓" : "?"}
+                    {floor.kind === "map" && <PinIcon />}
+                    {floor.name}
+                    {onFloor.length > 0 && (
+                      <span className={selected ? "text-slate-300" : "text-slate-500"}>
+                        {solvedOnFloor}/{onFloor.length}
+                      </span>
+                    )}
                   </button>
                 );
               })}
+            </nav>
+          )}
+        </div>
+
+        <div className="ml-auto flex flex-col items-end lg:ml-0">
+          <span className="ol-kicker">Zeit</span>
+          <span className="font-display text-4xl font-extrabold leading-[0.9] tabular-nums sm:text-[44px]">
+            {formatDuration(elapsedSeconds)}
+          </span>
+        </div>
+      </header>
+
+      <div className="flex min-h-0 flex-1">
+        <div className="ol-north relative min-w-0 flex-1 overflow-hidden">
+          {selectedFloor.kind === "map" ? (
+            <PlayMapView
+              floor={selectedFloor as CustomFloor}
+              hotspots={floorHotspots}
+              isSolved={isSolved}
+              onOpenHotspot={(hotspotId) => setActiveHotspotId(hotspotId)}
+              onPositionUpdate={(lat, lng) => setCurrentPosition({ lat, lng })}
+            />
+          ) : (
+            <div className="flex h-full w-full items-center justify-center p-3 sm:p-5">
+              <div className="relative max-h-full max-w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={selectedFloor.imagePath!}
+                  alt={selectedFloor.name}
+                  className="block h-auto max-h-full w-auto max-w-full select-none"
+                />
+                {floorHotspots.map((hotspot) => {
+                  const solved = isSolved(hotspot);
+                  const active = hotspot.id === activeHotspotId;
+                  return (
+                    <button
+                      key={hotspot.id}
+                      onClick={() => !solved && setActiveHotspotId(hotspot.id)}
+                      style={{ left: `${hotspot.xPct}%`, top: `${hotspot.yPct}%` }}
+                      className={`absolute flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center p-0 font-display text-xl font-extrabold shadow-[0_3px_10px_rgb(27_27_31/0.25)] ${
+                        active
+                          ? "ol-flag rounded-md border-[3px] border-ink"
+                          : solved
+                            ? "rounded-full border-4 border-course bg-course text-white"
+                            : "rounded-full border-4 border-course bg-white text-course"
+                      }`}
+                      aria-label={`Rätsel ${hotspot.number}: ${hotspot.roomName}${
+                        solved ? ", gelöst" : ""
+                      }`}
+                    >
+                      {active ? null : solved ? <CheckIcon size={22} /> : hotspot.number}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+          )}
+        </div>
+
+        <aside
+          aria-label="Rätselliste"
+          className="hidden w-80 shrink-0 flex-col border-l-2 border-ink bg-white lg:flex"
+        >
+          <div className="flex items-baseline justify-between px-5 pb-2 pt-4">
+            <h2 className="truncate font-display text-2xl font-extrabold uppercase">
+              {selectedFloor.name}
+            </h2>
+            <span className="shrink-0 pl-2 text-[15px] text-slate-600">
+              {floorSolvedCount} von {floorHotspots.length} gelöst
+            </span>
           </div>
-        )}
+          <ul className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3">
+            {sortedFloorHotspots.map((hotspot) => {
+              const solved = isSolved(hotspot);
+              const active = hotspot.id === activeHotspotId;
+              // Auf Live-Karten muss die Gruppe vor Ort sein - dort öffnet nur
+              // der Marker auf der Karte das Rätsel (mit Entfernungsprüfung).
+              const openable = !solved && selectedFloor.kind !== "map";
+              return (
+                <li key={hotspot.id}>
+                  <button
+                    type="button"
+                    disabled={!openable}
+                    onClick={() => setActiveHotspotId(hotspot.id)}
+                    className={`flex min-h-13 w-full items-center gap-3 rounded-lg px-2.5 text-left text-[17px] font-medium text-ink transition enabled:hover:bg-slate-100 ${
+                      active ? "bg-signal-soft" : ""
+                    }`}
+                  >
+                    <span
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-[3px] border-course font-display text-base font-extrabold ${
+                        solved ? "bg-course text-white" : "bg-white text-course"
+                      }`}
+                    >
+                      {hotspot.number}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{hotspot.roomName}</span>
+                    <span
+                      className={`text-sm font-semibold ${
+                        solved ? "text-course" : active ? "text-signal-ink" : "text-slate-500"
+                      }`}
+                    >
+                      {solved ? "gelöst" : "offen"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+            {sortedFloorHotspots.length === 0 && (
+              <li className="px-2.5 py-3 text-base text-slate-500">
+                Auf diesem Stockwerk gibt es keine Rätsel.
+              </li>
+            )}
+          </ul>
+          <div className="flex flex-wrap gap-x-4 gap-y-2 border-t-2 border-ink px-5 py-3 text-sm text-slate-700">
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 rounded-full bg-course" />
+              Gelöst
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-4 w-4 rounded-full border-[3px] border-course" />
+              Offen
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="ol-flag h-4 w-4 rounded-[3px] border-2 border-ink" />
+              Geöffnet
+            </span>
+          </div>
+        </aside>
       </div>
 
       {activeHotspot && activePuzzle && (
         <PuzzleModal
           roomName={activeHotspot.roomName}
+          number={activeHotspot.number}
+          floorName={allFloors.find((f) => f.id === activeHotspot.floorId)?.name ?? null}
           puzzle={activePuzzle}
           onSubmit={handleAnswerSubmit}
           onClose={() => setActiveHotspotId(null)}
         />
       )}
 
-      {showCorrectPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-600 px-8 py-6 text-center shadow-xl">
-            <p className="text-xl font-bold text-white">Super – eure Antwort war korrekt!</p>
-            <p className="text-lg font-semibold text-white">+ 5 XP</p>
-          </div>
-        </div>
-      )}
+      {showCorrectPopup && <CorrectPopup />}
 
       {pendingBroadcast && (
         <BroadcastOverlay
@@ -487,6 +637,21 @@ export default function PlayPage() {
         />
       )}
     </main>
+  );
+}
+
+function CorrectPopup() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 px-4">
+      <div
+        role="status"
+        className="flex flex-col items-center gap-2 rounded-xl border-2 border-ink bg-course px-10 py-7 text-center text-white shadow-xl"
+      >
+        <CheckIcon size={40} />
+        <p className="font-display text-3xl font-extrabold uppercase">Richtig!</p>
+        <p className="text-lg font-semibold">Super – eure Antwort war korrekt! + 5 XP</p>
+      </div>
+    </div>
   );
 }
 
@@ -502,20 +667,98 @@ function BroadcastOverlay({
   onAck: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 px-4">
-      <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 text-center shadow-xl">
-        <p className="text-sm font-semibold uppercase tracking-wide text-amber-600">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/60 px-4">
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        className="flex w-full max-w-md flex-col gap-5 rounded-xl border-[3px] border-ink bg-white p-7 text-center shadow-xl"
+      >
+        <p className="font-display text-sm font-bold uppercase tracking-[0.1em] text-signal-ink">
           Nachricht von der Spielleitung
         </p>
-        <p className="text-lg font-medium text-slate-900">{message.text}</p>
+        <p className="text-2xl font-semibold text-ink">{message.text}</p>
         <button
           onClick={onAck}
           disabled={acking}
-          className="rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white disabled:opacity-50"
+          className="min-h-14 rounded-xl border-2 border-ink bg-signal px-6 font-display text-2xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400 disabled:opacity-50"
         >
           Verstanden
         </button>
       </div>
     </div>
+  );
+}
+
+function IntroLine({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-4">
+      <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[3px] border-course text-course">
+        {icon}
+      </span>
+      <span className="pt-1">{children}</span>
+    </li>
+  );
+}
+
+function CheckIcon({ size }: { size: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+function PinIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      role="img"
+      aria-label="Live-Karte"
+    >
+      <path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>
+  );
+}
+
+function MapIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinejoin="round" aria-hidden>
+      <path d="M12 3l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.8z" />
+    </svg>
   );
 }

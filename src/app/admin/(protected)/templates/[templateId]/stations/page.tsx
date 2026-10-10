@@ -33,7 +33,7 @@ export default function TemplateStationsPage({
             <button
               type="button"
               onClick={() => router.push("/admin/events")}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500"
+              className="rounded-lg border-2 border-ink px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500"
             >
               ← Zurück
             </button>

@@ -123,7 +123,7 @@ export default function SolutionsView({
         return (
           <div
             key={hotspot.id}
-            className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm"
+            className="flex flex-col gap-1 rounded-xl border-2 border-ink bg-white px-5 py-4"
           >
             <p className="text-xs font-medium text-slate-400">
               {floorName[hotspot.floorId] ?? "Unbekannte Ebene"} · #{hotspot.number}{" "}

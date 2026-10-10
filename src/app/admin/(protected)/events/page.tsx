@@ -195,13 +195,26 @@ export default function AdminEventsPage() {
       <li>
         <Link
           href={`/admin/events/${event.id}`}
-          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm transition hover:border-slate-400"
+          className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-4 transition hover:bg-slate-50"
         >
           <div>
-            <p className="font-semibold text-slate-900">{event.name}</p>
-            <p className="text-sm text-slate-500">Code: {event.joinCode}</p>
+            <p className="text-lg font-semibold text-slate-900">{event.name}</p>
+            <p className="text-sm text-slate-600">
+              Code:{" "}
+              <span className="font-display text-base font-extrabold tracking-[0.12em] text-ink">
+                {event.joinCode}
+              </span>
+            </p>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+          <span
+            className={`rounded-full px-3 py-1 text-sm font-bold ${
+              event.status === "active"
+                ? "bg-signal-soft text-signal-ink"
+                : event.status === "finished"
+                  ? "bg-course-soft text-emerald-800"
+                  : "bg-slate-100 text-slate-700"
+            }`}
+          >
             {STATUS_LABEL[event.status]}
           </span>
         </Link>
@@ -215,7 +228,7 @@ export default function AdminEventsPage() {
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-10">
         {mode === "closed" && (
           <div className="flex flex-col gap-3">
-            <p className="text-center text-sm text-slate-500">
+            <p className="text-center text-base text-slate-600">
               Mit dieser App erstellst du als Lehrkraft Schulhaus-Rallyes: Du platzierst Stationen mit
               Rätseln auf Gebäudeplänen oder Karten. Deine Schüler:innen bilden Gruppen, laufen die
               Stationen ab und lösen dort die Rätsel, um Punkte zu sammeln.
@@ -230,7 +243,7 @@ export default function AdminEventsPage() {
               type="button"
               onClick={() => setMode("choice")}
               disabled={!orgId}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
+              className="rounded-xl border-2 border-ink bg-signal px-5 py-4 text-center font-display text-2xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-signal"
             >
               Neue Rallye anlegen
             </button>
@@ -238,19 +251,19 @@ export default function AdminEventsPage() {
               type="button"
               onClick={() => setMode("manageTemplates")}
               disabled={!orgId}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
+              className="rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-ink"
             >
               Vorlage erstellen / bearbeiten
             </button>
             <Link
               href="/admin/highscore"
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              className="rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white"
             >
               Highscore
             </Link>
             <Link
               href="/admin/organization"
-              className="relative rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              className="relative rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white"
             >
               Organisation erstellen / verwalten
               {pendingOrgRequests > 0 && (
@@ -279,14 +292,14 @@ export default function AdminEventsPage() {
                   if (templateError) setTemplateError(null);
                 }}
                 placeholder="Name der neuen Vorlage"
-                className={`rounded-lg border px-4 py-2 ${
-                  templateError ? "border-red-400" : "border-slate-300"
+                className={`rounded-lg border-2 px-4 py-2 ${
+                  templateError ? "border-red-400" : "border-ink"
                 }`}
               />
               <button
                 type="submit"
                 disabled={creatingTemplate}
-                className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:opacity-50"
+                className="self-start rounded-lg border-2 border-ink bg-white px-4 py-2 font-semibold text-slate-800 transition hover:bg-ink hover:text-white disabled:opacity-50"
               >
                 {creatingTemplate ? "Legt an…" : "Neue Vorlage anlegen"}
               </button>
@@ -299,7 +312,7 @@ export default function AdminEventsPage() {
                 return (
                   <li
                     key={t.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                    className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-3"
                   >
                     <span className="font-medium text-slate-800">{t.name}</span>
                     <div className="flex items-center gap-4">
@@ -358,14 +371,14 @@ export default function AdminEventsPage() {
               type="button"
               onClick={() => setMode("template")}
               disabled={templates.length === 0}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-slate-300 disabled:hover:bg-white disabled:hover:text-slate-800"
+              className="rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white disabled:hover:text-ink"
             >
               Vorlage nutzen
             </button>
             <button
               type="button"
               onClick={() => setMode("scratch")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              className="rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white"
             >
               Komplett neue Rallye anlegen
             </button>
@@ -394,15 +407,15 @@ export default function AdminEventsPage() {
                 if (error) setError(null);
               }}
               placeholder={mode === "scratch" ? "Neue Rallye, z. B. Klasse 5a" : "Name der neuen Rallye"}
-              className={`rounded-lg border px-4 py-2 ${
-                error ? "border-red-400" : "border-slate-300"
+              className={`rounded-lg border-2 px-4 py-2 ${
+                error ? "border-red-400" : "border-ink"
               }`}
             />
             {mode === "template" && (
               <select
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm"
+                className="rounded-lg border-2 border-ink px-4 py-2 text-sm"
               >
                 <option value="" disabled>
                   Vorlage wählen…
@@ -417,7 +430,7 @@ export default function AdminEventsPage() {
             <button
               type="submit"
               disabled={creating}
-              className="self-start rounded-lg border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-800 transition hover:border-slate-900 hover:bg-slate-900 hover:text-white disabled:opacity-50"
+              className="self-start rounded-lg border-2 border-ink bg-white px-4 py-2 font-semibold text-slate-800 transition hover:bg-ink hover:text-white disabled:opacity-50"
             >
               Anlegen
             </button>
@@ -427,8 +440,8 @@ export default function AdminEventsPage() {
 
         {mode === "closed" && (
           <>
-            <details className="rounded-xl border border-slate-200 bg-white">
-              <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
+            <details className="rounded-xl border-2 border-ink bg-white">
+              <summary className="cursor-pointer select-none px-5 py-3 font-display text-lg font-bold uppercase tracking-wide text-ink">
                 Aktuell laufende Rallyes{openEvents.length > 0 && ` (${openEvents.length})`}
               </summary>
               <div className="border-t border-slate-200 p-4">
@@ -443,8 +456,8 @@ export default function AdminEventsPage() {
               </div>
             </details>
 
-            <details className="rounded-xl border border-slate-200 bg-white">
-              <summary className="cursor-pointer select-none px-5 py-3 text-sm font-semibold text-slate-700">
+            <details className="rounded-xl border-2 border-ink bg-white">
+              <summary className="cursor-pointer select-none px-5 py-3 font-display text-lg font-bold uppercase tracking-wide text-ink">
                 Beendete Rallyes{finishedEvents.length > 0 && ` (${finishedEvents.length})`}
               </summary>
               <div className="border-t border-slate-200 p-4">
@@ -472,12 +485,12 @@ export default function AdminEventsPage() {
       )}
 
       {forkingTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4">
           <form
             onSubmit={handleForkTemplate}
-            className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl"
+            className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-[3px] border-ink bg-white p-6 shadow-xl"
           >
-            <h2 className="text-lg font-bold">Als eigene Kopie bearbeiten</h2>
+            <h2 className="font-display text-2xl font-extrabold uppercase">Als eigene Kopie bearbeiten</h2>
             <p className="text-sm text-slate-600">
               „{forkingTemplate.name}“ gehört jemand anderem - du kannst sie nicht direkt
               überschreiben. Gib deiner Kopie einen Namen, dann kannst du sie frei bearbeiten.
@@ -487,7 +500,7 @@ export default function AdminEventsPage() {
               value={forkName}
               onChange={(e) => setForkName(e.target.value)}
               placeholder="Name der Kopie"
-              className="rounded-lg border border-slate-300 px-3 py-2"
+              className="rounded-lg border-2 border-ink px-3 py-2"
             />
             {forkError && <p className="text-sm text-red-600">{forkError}</p>}
             <div className="mt-2 flex flex-col gap-2">

@@ -50,7 +50,7 @@ export default function ResultsPage({
         {finishedGroups.map((group, index) => (
           <div
             key={group.id}
-            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm"
+            className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-6 py-5"
           >
             <div className="flex items-center gap-4">
               <span className="w-10 text-2xl">{MEDALS[index] ?? index + 1}</span>

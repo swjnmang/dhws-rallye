@@ -76,10 +76,10 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
   }
 
   return (
-    <div className="flex w-full max-w-sm flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       {existingSession && (
-        <div className="flex flex-col gap-3 rounded-xl border border-slate-300 bg-slate-50 px-5 py-4 text-left">
-          <p className="text-sm text-slate-600">
+        <div className="flex flex-col gap-3 rounded-xl border-2 border-ink bg-signal-soft px-5 py-4 text-left">
+          <p className="text-base text-slate-700">
             Ihr seid bereits als <span className="font-semibold">{existingSession.groupName}</span>{" "}
             (Klasse {existingSession.className}) bei &bdquo;{existingSession.eventName}&ldquo;
             angemeldet.
@@ -87,7 +87,7 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
           <button
             type="button"
             onClick={() => router.push("/play")}
-            className="rounded-lg bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-700"
+            className="min-h-14 rounded-xl border-2 border-ink bg-ink px-4 font-display text-xl font-extrabold uppercase tracking-wide text-white transition hover:bg-slate-700"
           >
             Zurück zum Spiel
           </button>
@@ -95,9 +95,9 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
       )}
 
       {!existingEventFinished && (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1 text-left">
-            <label htmlFor="code" className="text-sm font-medium text-slate-700">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2 text-left">
+            <label htmlFor="code" className="text-base font-semibold">
               Rallye-Code
             </label>
             <input
@@ -106,49 +106,62 @@ export default function JoinForm({ initialCode }: { initialCode: string }) {
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               required
               maxLength={6}
-              placeholder="Z. B. AB12CD"
-              className="rounded-lg border border-slate-300 px-4 py-3 text-center text-2xl font-mono tracking-widest uppercase"
+              autoComplete="off"
+              autoCapitalize="characters"
+              placeholder="AB12CD"
+              className="h-20 rounded-xl border-2 border-ink px-4 text-center font-display text-5xl font-extrabold uppercase tracking-[0.3em] placeholder:text-slate-300 focus:border-signal focus:outline-none"
             />
           </div>
 
-          <div className="flex flex-col gap-1 text-left">
-            <label htmlFor="groupName" className="text-sm font-medium text-slate-700">
-              Gruppenname
-            </label>
-            <input
-              id="groupName"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              required
-              maxLength={40}
-              placeholder="Z. B. Die Adler"
-              className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="flex flex-col gap-2 text-left sm:col-span-2">
+              <label htmlFor="groupName" className="text-base font-semibold">
+                Gruppenname
+              </label>
+              <input
+                id="groupName"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                required
+                maxLength={40}
+                placeholder="Z. B. Die Adler"
+                className="h-15 rounded-xl border-2 border-ink px-4 text-xl placeholder:text-slate-400 focus:border-signal focus:outline-none"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2 text-left">
+              <label htmlFor="className" className="text-base font-semibold">
+                Klasse
+              </label>
+              <input
+                id="className"
+                value={className}
+                onChange={(e) => setClassName(e.target.value)}
+                required
+                maxLength={20}
+                placeholder="Z. B. 5a"
+                className="h-15 rounded-xl border-2 border-ink px-4 text-xl placeholder:text-slate-400 focus:border-signal focus:outline-none"
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-1 text-left">
-            <label htmlFor="className" className="text-sm font-medium text-slate-700">
-              Klasse
-            </label>
-            <input
-              id="className"
-              value={className}
-              onChange={(e) => setClassName(e.target.value)}
-              required
-              maxLength={20}
-              placeholder="Z. B. 5a"
-              className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <p className="rounded-lg border-2 border-red-600 bg-red-50 px-4 py-3 text-base font-medium text-red-700">
+              {error}
+            </p>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="rounded-xl bg-slate-900 px-6 py-4 text-lg font-semibold text-white shadow-sm transition hover:bg-slate-700 disabled:opacity-50"
+            className="flex min-h-17 items-center justify-center gap-3 rounded-xl border-2 border-ink bg-signal px-6 font-display text-3xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400 disabled:opacity-50"
           >
             {loading ? "Beitreten…" : "Bereit"}
+            {!loading && (
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            )}
           </button>
         </form>
       )}

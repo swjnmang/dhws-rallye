@@ -65,7 +65,7 @@ export default function AdminHelpPage() {
 
         <ol className="flex flex-col gap-6">
           {RALLYE_STEPS.map((step) => (
-            <li key={step.title} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <li key={step.title} className="rounded-2xl border-2 border-ink bg-white p-6">
               <h2 className="font-semibold text-slate-900">{step.title}</h2>
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{step.body}</p>
             </li>

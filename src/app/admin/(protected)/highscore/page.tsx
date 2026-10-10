@@ -67,7 +67,7 @@ export default function HighscorePage() {
         {entries.map((entry, index) => (
           <div
             key={entry.groupId}
-            className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-sm"
+            className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-6 py-5"
           >
             <div className="flex items-center gap-4">
               <span className="w-10 text-2xl">{MEDALS[index] ?? index + 1}</span>
@@ -109,9 +109,9 @@ export default function HighscorePage() {
       </main>
 
       {removingEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-bold">Aus Highscore entfernen?</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4">
+          <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-[3px] border-ink bg-white p-6 shadow-xl">
+            <h2 className="font-display text-2xl font-extrabold uppercase">Aus Highscore entfernen?</h2>
             <p className="text-sm text-slate-600">
               „{removingEntry.name}“ ({removingEntry.className}) wird aus der Highscore-Liste
               ausgeblendet. Das Ergebnis bleibt in der Rangliste der jeweiligen Rallye erhalten.

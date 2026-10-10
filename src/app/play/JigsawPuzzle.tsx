@@ -113,7 +113,7 @@ export default function JigsawPuzzle({
 
   return (
     <div
-      className="mt-6 grid gap-1 overflow-hidden rounded-xl border border-slate-300 bg-slate-100"
+      className="grid gap-1 overflow-hidden rounded-xl border-2 border-ink bg-ink"
       style={{ gridTemplateColumns: `repeat(${gridSize}, 1fr)`, aspectRatio: "1 / 1" }}
     >
       {order.map((originalIndex, slot) => (
@@ -123,7 +123,7 @@ export default function JigsawPuzzle({
           onClick={() => handleTileClick(slot)}
           aria-label={`Kachel ${slot + 1}`}
           className={`aspect-square bg-slate-200 bg-cover transition ${
-            selectedSlot === slot ? "ring-4 ring-inset ring-indigo-500" : ""
+            selectedSlot === slot ? "ring-[5px] ring-inset ring-signal" : ""
           }`}
           style={tileBackground(originalIndex)}
         />

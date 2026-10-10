@@ -58,12 +58,12 @@ export default function AddFloorForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/55 px-4">
       <form
         onSubmit={handleSave}
-        className="flex max-h-[85vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        className="flex max-h-[85vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-xl border-[3px] border-ink bg-white p-6 shadow-xl"
       >
-        <h2 className="text-lg font-bold">Neue Ebene hinzufügen</h2>
+        <h2 className="font-display text-2xl font-extrabold uppercase">Neue Ebene hinzufügen</h2>
 
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium text-slate-700">Name</label>
@@ -72,7 +72,7 @@ export default function AddFloorForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Z. B. Turnhalle, Schulhof, Park"
-            className="rounded-lg border border-slate-300 px-3 py-2"
+            className="rounded-lg border-2 border-ink px-3 py-2"
           />
         </div>
 
@@ -107,7 +107,7 @@ export default function AddFloorForm({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700"
+            className="rounded-lg border-2 border-ink px-4 py-2 font-medium text-slate-700"
           >
             Abbrechen
           </button>

@@ -195,14 +195,14 @@ export default function OrganizationPage() {
             <button
               type="button"
               onClick={() => setMode("create")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              className="rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white"
             >
               Neue Organisation gründen
             </button>
             <button
               type="button"
               onClick={() => setMode("join")}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-4 text-center font-semibold text-slate-800 shadow-sm transition hover:border-slate-900 hover:bg-slate-900 hover:text-white"
+              className="rounded-xl border-2 border-ink bg-white px-5 py-4 text-center font-semibold text-ink transition hover:bg-ink hover:text-white"
             >
               Bestehender Organisation beitreten
             </button>
@@ -226,7 +226,7 @@ export default function OrganizationPage() {
                 if (error) setError(null);
               }}
               placeholder="Name der Organisation, z. B. Musterschule"
-              className="rounded-lg border border-slate-300 px-4 py-3 text-lg"
+              className="rounded-lg border-2 border-ink px-4 py-3 text-lg"
             />
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button
@@ -259,7 +259,7 @@ export default function OrganizationPage() {
               {(orgs ?? []).map((org) => (
                 <li
                   key={org.id}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                  className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-3"
                 >
                   <span className="font-medium text-slate-800">{org.name}</span>
                   <button
@@ -318,7 +318,7 @@ export default function OrganizationPage() {
                     setOrgNameDraft(e.target.value);
                     setOrgNameSaved(false);
                   }}
-                  className="flex-1 rounded-lg border border-slate-300 px-4 py-2"
+                  className="flex-1 rounded-lg border-2 border-ink px-4 py-2"
                 />
                 <button
                   type="submit"
@@ -339,7 +339,7 @@ export default function OrganizationPage() {
                 {pending.map((m) => (
                   <li
                     key={m.uid}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                    className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-3"
                   >
                     <div>
                       <p className="font-medium text-slate-800">{m.displayName ?? m.email}</p>
@@ -375,7 +375,7 @@ export default function OrganizationPage() {
                 {active.map((m) => (
                   <li
                     key={m.uid}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                    className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-3"
                   >
                     <div>
                       <p className="font-medium text-slate-800">{m.displayName ?? m.email}</p>
@@ -436,7 +436,7 @@ export default function OrganizationPage() {
                 {(invites ?? []).map((invite) => (
                   <li
                     key={invite.id}
-                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                    className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-3"
                   >
                     <span className="text-sm text-slate-700">
                       Erstellt am{" "}

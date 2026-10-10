@@ -98,14 +98,18 @@ export default function PlayMapView({
       const marker = new google.maps.Marker({
         position: { lat: hotspot.lat, lng: hotspot.lng },
         map,
-        label: { text: solved ? "✓" : "?", color: "white", fontWeight: "bold" },
+        label: {
+          text: solved ? "✓" : String(hotspot.number),
+          color: solved ? "white" : "#8E2A85",
+          fontWeight: "bold",
+        },
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 16,
-          fillColor: solved ? "#10b981" : "#f59e0b",
+          fillColor: solved ? "#8E2A85" : "#FFFFFF",
           fillOpacity: 1,
-          strokeColor: "white",
-          strokeWeight: 2,
+          strokeColor: "#8E2A85",
+          strokeWeight: 4,
         },
         title: hotspot.roomName,
       });
@@ -137,9 +141,9 @@ export default function PlayMapView({
             icon: {
               path: google.maps.SymbolPath.CIRCLE,
               scale: 9,
-              fillColor: "#2563eb",
+              fillColor: "#F05A1A",
               fillOpacity: 1,
-              strokeColor: "white",
+              strokeColor: "#1B1B1F",
               strokeWeight: 3,
             },
             zIndex: 999,
@@ -158,12 +162,12 @@ export default function PlayMapView({
   return (
     <div className="relative h-full w-full">
       {error && (
-        <p className="absolute inset-x-0 top-0 z-10 bg-red-600 px-4 py-2 text-center text-sm text-white">
+        <p className="absolute inset-x-0 top-0 z-10 border-b-2 border-ink bg-red-700 px-4 py-3 text-center text-base font-semibold text-white">
           {error}
         </p>
       )}
       {tooFarMessage && (
-        <p className="absolute inset-x-0 top-0 z-10 bg-amber-500 px-4 py-2 text-center text-sm font-medium text-white">
+        <p className="absolute inset-x-0 top-0 z-10 border-b-2 border-ink bg-signal-soft px-4 py-3 text-center text-base font-semibold text-signal-ink">
           {tooFarMessage}
         </p>
       )}
