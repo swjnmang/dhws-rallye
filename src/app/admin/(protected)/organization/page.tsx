@@ -6,6 +6,7 @@ import type { AppUser, MembershipStatus, OrgInvite, OrgRole } from "@/lib/types"
 
 type Me = {
   uid: string;
+  orgId: string | null;
   orgName: string | null;
   orgRole: OrgRole | null;
   membershipStatus: MembershipStatus;
@@ -99,9 +100,10 @@ export default function OrganizationPage() {
     setBusy(true);
     setError(null);
     const res = await fetch(`/api/orgs/${orgId}/join`, { method: "POST" });
+    const data = await res.json().catch(() => null);
     setBusy(false);
     if (!res.ok) {
-      setError("Beitrittsanfrage konnte nicht gesendet werden.");
+      setError(data?.error ?? "Beitritt konnte nicht abgeschlossen werden.");
       return;
     }
     setMode("choice");
@@ -180,6 +182,10 @@ export default function OrganizationPage() {
 
   const pending = members?.filter((m) => m.membershipStatus === "pending") ?? [];
   const active = members?.filter((m) => m.membershipStatus === "active") ?? [];
+  // Own current org (if any) is pointless to list here when switching -
+  // joining it again is a no-op, so it's hidden rather than showing a
+  // "Beitreten" button that does nothing.
+  const joinableOrgs = (orgs ?? []).filter((org) => org.id !== me?.orgId);
 
   return (
     <>
@@ -250,13 +256,13 @@ export default function OrganizationPage() {
             </button>
             {error && <p className="text-sm text-red-600">{error}</p>}
             {orgs === null && <p className="text-center text-slate-500">Lädt…</p>}
-            {orgs !== null && orgs.length === 0 && (
+            {orgs !== null && joinableOrgs.length === 0 && (
               <p className="text-center text-sm text-slate-400">
-                Es gibt noch keine Organisationen zum Beitreten. Gründe stattdessen eine neue.
+                Es gibt noch keine weitere Organisation zum Beitreten. Gründe stattdessen eine neue.
               </p>
             )}
             <ul className="flex flex-col gap-2">
-              {(orgs ?? []).map((org) => (
+              {joinableOrgs.map((org) => (
                 <li
                   key={org.id}
                   className="flex items-center justify-between rounded-xl border-2 border-ink bg-white px-5 py-3"
@@ -276,7 +282,7 @@ export default function OrganizationPage() {
           </div>
         )}
 
-        {me?.membershipStatus === "pending" && (
+        {me?.membershipStatus === "pending" && mode === "choice" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <p className="text-slate-600">
               Deine Beitrittsanfrage für <span className="font-semibold">{me.orgName}</span> wartet
@@ -292,22 +298,31 @@ export default function OrganizationPage() {
           </div>
         )}
 
-        {me?.membershipStatus === "active" && me.orgRole === "member" && (
+        {me?.membershipStatus === "active" && me.orgRole === "member" && mode === "choice" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <p className="text-slate-600">
               Du bist Mitglied von <span className="font-semibold">{me.orgName}</span>.
             </p>
-            <button
-              onClick={handleLeave}
-              disabled={busy}
-              className="text-sm font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
-            >
-              Organisation verlassen
-            </button>
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setMode("join")}
+                className="rounded-xl border-2 border-ink bg-white px-5 py-3 font-semibold text-ink transition hover:bg-ink hover:text-white"
+              >
+                Organisation wechseln
+              </button>
+              <button
+                onClick={handleLeave}
+                disabled={busy}
+                className="text-sm font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+              >
+                Organisation verlassen
+              </button>
+            </div>
           </div>
         )}
 
-        {me?.membershipStatus === "active" && me.orgRole === "owner" && (
+        {me?.membershipStatus === "active" && me.orgRole === "owner" && mode === "choice" && (
           <div className="flex flex-col gap-8">
             <section className="flex flex-col gap-3">
               <h2 className="text-lg font-bold text-slate-900">Organisation</h2>

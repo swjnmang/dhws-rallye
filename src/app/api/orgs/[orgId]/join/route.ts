@@ -3,8 +3,15 @@ import { requireVerifiedUser, AdminAuthError } from "@/lib/admin-auth";
 import { adminDb } from "@/lib/firebase-admin";
 import type { AppUser } from "@/lib/types";
 
-// Requests membership in an existing org - lands as "pending" until that
-// org's owner approves it on /admin/members.
+// Joins an existing org as an active member immediately - no owner approval
+// needed, same as accepting an invite link (see
+// /api/invites/[token]/accept). Also doubles as "switch org": a member
+// already active elsewhere is simply moved over in this same write, no
+// separate /api/orgs/leave call required first - members can freely jump
+// between orgs on their own. approvedByUid is the joiner's own uid since
+// there's no approver in this flow; kept non-null so the field still means
+// "who vouched for this membership" consistently across every path that
+// grants it (self, an invite's creator, or an actual approve action).
 export async function POST(_request: Request, { params }: { params: Promise<{ orgId: string }> }) {
   let uid: string;
   try {
@@ -26,20 +33,35 @@ export async function POST(_request: Request, { params }: { params: Promise<{ or
   const userRef = adminDb().collection("users").doc(uid);
   const userDoc = await userRef.get();
   const user = userDoc.data() as AppUser | undefined;
-  if (user?.membershipStatus === "active") {
-    return NextResponse.json({ error: "Du gehörst bereits einer Organisation an" }, { status: 409 });
+
+  // Already an active member of this exact org - nothing to do.
+  if (user?.membershipStatus === "active" && user.orgId === orgId) {
+    return NextResponse.json({ ok: true, orgId });
+  }
+
+  // Owners can't switch away directly - that would leave their current org
+  // without anyone able to manage it (same restriction /api/orgs/leave
+  // enforces). They need to hand the owner role to someone else first.
+  if (user?.membershipStatus === "active" && user.orgRole === "owner") {
+    return NextResponse.json(
+      {
+        error:
+          "Als Owner kannst du nicht direkt wechseln - übertrage die Owner-Rolle zuerst an ein anderes Mitglied.",
+      },
+      { status: 409 }
+    );
   }
 
   await userRef.set(
     {
       orgId,
       orgRole: "member",
-      membershipStatus: "pending",
-      approvedAt: null,
-      approvedByUid: null,
+      membershipStatus: "active",
+      approvedAt: Date.now(),
+      approvedByUid: uid,
     },
     { merge: true }
   );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, orgId });
 }

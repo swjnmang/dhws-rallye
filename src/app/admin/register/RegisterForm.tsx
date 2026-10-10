@@ -30,6 +30,11 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
   const [loading, setLoading] = useState(false);
   const [inviteOrgName, setInviteOrgName] = useState<string | null>(null);
   const [inviteInvalid, setInviteInvalid] = useState(false);
+  // Set only when the account was created and logged in successfully, but
+  // joining the invited org failed - the form above no longer applies (the
+  // account already exists, re-submitting it would just fail with
+  // "email already in use"), so this replaces it with a way forward instead.
+  const [orgJoinFailed, setOrgJoinFailed] = useState(false);
 
   useEffect(() => {
     if (!invite) return;
@@ -76,10 +81,32 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
       }
 
       if (invite) {
-        await fetch(`/api/invites/${invite}/accept`, { method: "POST" }).catch(() => {});
+        const acceptRes = await fetch(`/api/invites/${invite}/accept`, { method: "POST" }).catch(
+          () => null
+        );
+        if (!acceptRes || !acceptRes.ok) {
+          // Account exists and is logged in - only the org join failed (invite
+          // revoked/expired between page load and submit, or a transient
+          // error). Surface it instead of silently leaving the account
+          // org-less with no explanation for why "Rallye anlegen" is greyed
+          // out - keep them here (still on /admin/register, already logged
+          // in) with a way forward instead of navigating them past the error.
+          setError(
+            "Konto wurde erstellt, aber der Einladung konnte nicht automatisch gefolgt werden. Bitte tritt der Organisation über \"Organisation erstellen / verwalten\" manuell bei."
+          );
+          setOrgJoinFailed(true);
+          setLoading(false);
+          return;
+        }
+        router.push("/admin/events");
+        router.refresh();
+        return;
       }
 
-      router.push("/admin/events");
+      // No invite - ask right away whether to join an existing org or found
+      // a new one, instead of dropping them on /admin/events first with a
+      // "you're org-less" banner they'd have to notice and click through.
+      router.push("/admin/organization");
       router.refresh();
     } catch (err) {
       const code = err instanceof Error && "code" in err ? String((err as { code: string }).code) : "";
@@ -105,61 +132,73 @@ export default function RegisterForm({ invite }: { invite: string | null }) {
           Dieser Einladungslink ist nicht mehr gültig. Du kannst dich trotzdem normal registrieren.
         </p>
       )}
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-2 border-ink bg-white p-6"
-      >
-        <input
-          type="text"
-          autoFocus
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="Name"
-          aria-label="Name"
-          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
-        />
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="E-Mail-Adresse"
-          aria-label="E-Mail-Adresse"
-          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Passwort (mind. 6 Zeichen)"
-          aria-label="Passwort (mind. 6 Zeichen)"
-          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
-        />
-        <input
-          type="password"
-          value={passwordConfirm}
-          onChange={(e) => setPasswordConfirm(e.target.value)}
-          placeholder="Passwort wiederholen"
-          aria-label="Passwort wiederholen"
-          className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
-        />
-        {error && <p className="text-base font-medium text-red-700">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="min-h-15 rounded-xl border-2 border-ink bg-signal px-6 font-display text-2xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400 disabled:opacity-50"
-        >
-          {loading ? "Registriert…" : "Registrieren"}
-        </button>
-        <p className="text-center text-base text-slate-600">
-          Bereits registriert?{" "}
+      {orgJoinFailed ? (
+        <div className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-2 border-ink bg-white p-6 text-center">
+          <p className="text-base font-medium text-red-700">{error}</p>
           <Link
-            href={invite ? `/admin/login?invite=${invite}` : "/admin/login"}
-            className="font-semibold text-course underline-offset-4 hover:underline"
+            href="/admin/organization"
+            className="flex min-h-15 items-center justify-center rounded-xl border-2 border-ink bg-signal px-6 font-display text-2xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400"
           >
-            Anmelden
+            Zur Organisation
           </Link>
-        </p>
-      </form>
+        </div>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="flex w-full max-w-sm flex-col gap-4 rounded-xl border-2 border-ink bg-white p-6"
+        >
+          <input
+            type="text"
+            autoFocus
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Name"
+            aria-label="Name"
+            className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="E-Mail-Adresse"
+            aria-label="E-Mail-Adresse"
+            className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
+          />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Passwort (mind. 6 Zeichen)"
+            aria-label="Passwort (mind. 6 Zeichen)"
+            className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
+          />
+          <input
+            type="password"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            placeholder="Passwort wiederholen"
+            aria-label="Passwort wiederholen"
+            className="h-14 rounded-xl border-2 border-ink px-4 text-lg placeholder:text-slate-500 focus:border-signal focus:outline-none"
+          />
+          {error && <p className="text-base font-medium text-red-700">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="min-h-15 rounded-xl border-2 border-ink bg-signal px-6 font-display text-2xl font-extrabold uppercase tracking-wide text-ink transition hover:bg-amber-400 disabled:opacity-50"
+          >
+            {loading ? "Registriert…" : "Registrieren"}
+          </button>
+          <p className="text-center text-base text-slate-600">
+            Bereits registriert?{" "}
+            <Link
+              href={invite ? `/admin/login?invite=${invite}` : "/admin/login"}
+              className="font-semibold text-course underline-offset-4 hover:underline"
+            >
+              Anmelden
+            </Link>
+          </p>
+        </form>
+      )}
     </main>
   );
 }

@@ -118,12 +118,13 @@ export default function AdminEventsPage() {
       setError("Rallye konnte nicht erstellt werden");
       return;
     }
-    if (mode === "template") {
-      const data = await res.json();
-      router.push(`/admin/events/${data.event.id}`);
-      return;
-    }
-    resetToClosed();
+    // Navigate straight to the new rally regardless of mode - previously
+    // only the "from template" path did this; "from scratch" just closed
+    // the form back to the Rallyes list with no confirmation, leaving the
+    // new (collapsed-by-default) rally easy to miss and making it look like
+    // nothing happened.
+    const data = await res.json();
+    router.push(`/admin/events/${data.event.id}`);
   }
 
   async function handleDeleteTemplate() {

@@ -23,6 +23,7 @@ export default function EventOverviewPage({
   const [groups, setGroups] = useState<Group[]>([]);
   const [puzzleCount, setPuzzleCount] = useState(0);
   const [joinInfo, setJoinInfo] = useState<{ url: string; qrDataUrl: string } | null>(null);
+  const [showJoinInfo, setShowJoinInfo] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [templateName, setTemplateName] = useState("");
@@ -341,6 +342,39 @@ export default function EventOverviewPage({
                   />
                 )}
                 <p className="break-all text-sm text-slate-600">{joinInfo?.url}</p>
+              </section>
+            )}
+
+            {event.status === "active" && (
+              <section className={card}>
+                <button
+                  type="button"
+                  onClick={() => setShowJoinInfo((v) => !v)}
+                  aria-expanded={showJoinInfo}
+                  className={`${outlineButton} w-full`}
+                >
+                  {showJoinInfo ? "Beitritts-Code ausblenden" : "Beitritts-Code anzeigen"}
+                </button>
+                {showJoinInfo && (
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <p className="text-sm text-slate-600">
+                      Falls eine Gruppe den Browser versehentlich geschlossen hat: erneut scannen
+                      oder den Code eingeben, um zurück ins laufende Spiel zu kommen.
+                    </p>
+                    <p className="font-display text-5xl font-extrabold tracking-[0.2em]">
+                      {event.joinCode}
+                    </p>
+                    {joinInfo && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={joinInfo.qrDataUrl}
+                        alt="QR-Code zum Beitreten"
+                        className="h-48 w-48 rounded-md border-2 border-ink p-1"
+                      />
+                    )}
+                    <p className="break-all text-sm text-slate-600">{joinInfo?.url}</p>
+                  </div>
+                )}
               </section>
             )}
 
